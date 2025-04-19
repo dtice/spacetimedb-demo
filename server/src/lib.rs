@@ -4,7 +4,7 @@ use spacetimedb::{reducer, table, Identity, ReducerContext, Table, Timestamp};
 pub struct User {
     #[primary_key]
     identity: Identity,
-    name: Option<String>,
+    name: String,
     online: bool,
 }
 
@@ -20,7 +20,7 @@ pub fn set_name(ctx: &ReducerContext, name: String) -> Result<(), String> {
     let name = validate_name(name)?;
     if let Some(user) = ctx.db.user().identity().find(ctx.sender) {
         ctx.db.user().identity().update(User {
-            name: Some(name),
+            name: name,
             ..user
         });
         Ok(())
@@ -52,7 +52,7 @@ pub fn client_connected(ctx: &ReducerContext) {
     } else {
         // Create new user for this identity
         ctx.db.user().insert(User {
-            name: None,
+            name: ctx.sender.to_string(),
             identity: ctx.sender,
             online: true,
         });
