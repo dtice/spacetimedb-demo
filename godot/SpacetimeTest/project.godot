@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="SpacetimeTest"
-run/main_scene="res://lobby.tscn"
+run/main_scene="res://lobby_3d.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 config/icon="res://icon.svg"
 

@@ -1,0 +1,60 @@
+[gd_scene load_steps=10 format=3 uid="uid://ckf20yib8qfvo"]
+
+[ext_resource type="Script" path="res://lobby_3d.gd" id="1_bwbyo"]
+[ext_resource type="Script" path="res://backend/spacetime/SpacetimeDBClient.gd" id="2_6rgco"]
+[ext_resource type="PackedScene" uid="uid://cmf3cm3bpwb6l" path="res://models/UFO.glb" id="3_egfvn"]
+[ext_resource type="Script" path="res://cow.gd" id="4_3x85k"]
+[ext_resource type="PackedScene" uid="uid://6qym43h5iyg5" path="res://models/Cow.glb" id="4_hqwn4"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kt04e"]
+albedo_color = Color(0.427493, 0.427493, 0.427493, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_3uofn"]
+material = SubResource("StandardMaterial3D_kt04e")
+size = Vector2(1000, 1000)
+
+[sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_t2yh2"]
+data = PackedVector3Array(500, 0, 500, -500, 0, 500, 500, 0, -500, -500, 0, 500, -500, 0, -500, 500, 0, -500)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_k5wxg"]
+radius = 0.343278
+height = 1.27388
+
+[node name="Lobby3d" type="Node3D"]
+script = ExtResource("1_bwbyo")
+
+[node name="SpacetimeDBClient" type="Node" parent="."]
+script = ExtResource("2_6rgco")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_3uofn")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D"]
+shape = SubResource("ConcavePolygonShape3D_t2yh2")
+
+[node name="UFO2" parent="." instance=ExtResource("3_egfvn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0155072, -1.19209e-07, -0.00490618)
+
+[node name="Cow" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.176097, 0)
+script = ExtResource("4_3x85k")
+
+[node name="CowMesh" parent="Cow" instance=ExtResource("4_hqwn4")]
+transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 0, 0, 0)
+
+[node name="Cow" parent="Cow/CowMesh" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.74158, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Cow"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0.489001, -0.132732)
+shape = SubResource("CapsuleShape3D_k5wxg")
+
+[node name="Camera3D" type="Camera3D" parent="Cow"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6348, 3.18927)
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.961473, -0.0625259, 0.267694, -0.274899, -0.218687, 0.936273, 0, -0.97379, -0.22745, 0, 10.0817, 0)
+
+[editable path="Cow/CowMesh"]
