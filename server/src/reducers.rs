@@ -3,27 +3,27 @@ use std::time::Duration;
 use spacetimedb::{rand::Rng, reducer, ReducerContext, ScheduleAt, Table, Timestamp};
 
 use crate::{
-    entities::{
-        config, cow, entity, logged_out_player, message, player, spawn_cow_timer, ufo, Config, Cow,
-        DbVector3, Entity, Message, Player, SpawnCowTimer, Ufo,
-    },
-    util::{mass_to_cow_size, validate_message, validate_name},
+    constants::{COW_MASS_MAX, COW_MASS_MIN, TARGET_COW_COUNT}, entities::{
+        config, cow, entity, logged_out_player, message, move_all_players_timer, player, spawn_cow_timer, ufo, Config, Cow, Entity, Message, MoveAllPlayersTimer, Player, SpawnCowTimer, Ufo
+    }, math::{DbVector2, DbVector3}, util::{mass_to_cow_size, mass_to_max_move_speed, validate_message, validate_name}
 };
-
-const COW_MASS_MIN: u32 = 2;
-const COW_MASS_MAX: u32 = 4;
-const TARGET_COW_COUNT: usize = 100;
 
 #[reducer(init)]
 pub fn init(ctx: &ReducerContext) -> Result<(), String> {
     log::info!("Initializing...");
     ctx.db.config().try_insert(Config {
         id: 0,
-        world_size: 1000,
+        world_size: 10,
     })?;
     ctx.db.spawn_cow_timer().try_insert(SpawnCowTimer {
         scheduled_id: 0,
         scheduled_at: ScheduleAt::Interval(Duration::from_millis(500).into()),
+    })?;
+    ctx.db
+    .move_all_players_timer()
+    .try_insert(MoveAllPlayersTimer {
+        scheduled_id: 0,
+        scheduled_at: ScheduleAt::Interval(Duration::from_millis(50).into()),
     })?;
 
     Ok(())
@@ -51,8 +51,8 @@ fn spawn_player(ctx: &ReducerContext, player_id: u32) -> Result<(), String> {
         .world_size;
     let mut rng = ctx.rng();
     let x = rng.gen_range(0.0..world_size as f32);
-    let y = rng.gen_range(0.0..world_size as f32);
-    let z: f32 = 0.0;
+    let y: f32 = 0.125f32;
+    let z = rng.gen_range(0.0..world_size as f32);
     spawn_player_at(
         ctx,
         player_id,
@@ -81,7 +81,7 @@ fn spawn_player_at(
         player_id,
         direction: DbVector3 {
             x: 0.0,
-            y: 1.0,
+            y: 0.0,
             z: 0.0,
         },
         speed: 0.0,
@@ -89,6 +89,59 @@ fn spawn_player_at(
     })?;
 
     Ok(entity)
+}
+
+#[spacetimedb::reducer]
+pub fn update_player_input(ctx: &ReducerContext, direction: DbVector2) -> Result<(), String> {
+    let player = ctx
+        .db
+        .player()
+        .identity()
+        .find(&ctx.sender)
+        .ok_or("Player not found")?;
+    for mut ufo in ctx.db.ufo().player_id().filter(&player.player_id) {
+        let norm = direction.normalized();
+        ufo.direction = DbVector3 {
+            x: norm.x,
+            y: ufo.direction.y,
+            z: norm.y
+        };
+        ufo.speed = direction.magnitude().clamp(0.0, 1.0);
+        ctx.db.ufo().entity_id().update(ufo);
+    }
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn move_all_players(ctx: &ReducerContext, _timer: MoveAllPlayersTimer) -> Result<(), String> {
+    let world_size = ctx
+        .db
+        .config()
+        .id()
+        .find(0)
+        .ok_or("Config not found")?
+        .world_size;
+
+    // Handle player input
+    for ufo in ctx.db.ufo().iter() {
+        let ufo_entity = ctx.db.entity().entity_id().find(&ufo.entity_id);
+        if !ufo_entity.is_some() {
+            // This can happen if a circle is eaten by another circle
+            continue;
+        }
+        let mut ufo_entity = ufo_entity.unwrap();
+        let ufo_size = mass_to_cow_size(ufo_entity.mass);
+        let direction = ufo.direction * ufo.speed;
+        let new_pos =
+            ufo_entity.position + direction * mass_to_max_move_speed(ufo_entity.mass);
+        let min = ufo_size;
+        let max = world_size as f32 - ufo_size;
+        ufo_entity.position.x = new_pos.x.clamp(min, max);
+        ufo_entity.position.z = new_pos.z.clamp(min, max);
+        ctx.db.entity().entity_id().update(ufo_entity);
+    }
+
+    Ok(())
 }
 
 #[reducer]
@@ -113,8 +166,8 @@ pub fn spawn_cow(ctx: &ReducerContext, _timer: SpawnCowTimer) -> Result<(), Stri
         let cow_size = mass_to_cow_size(cow_mass);
 
         let x = rng.gen_range(cow_size..world_size as f32 - cow_size);
-        let y = rng.gen_range(cow_size..world_size as f32 - cow_size);
-        let z: f32 = 0.0;
+        let y: f32 = 0.125;
+        let z = rng.gen_range(cow_size..world_size as f32 - cow_size);
         let entity = ctx.db.entity().try_insert(Entity {
             entity_id: 0,
             position: DbVector3 { x, y, z },

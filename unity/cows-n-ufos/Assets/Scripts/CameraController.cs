@@ -25,9 +25,16 @@ public class CameraController : MonoBehaviour
             transform.position = new Vector3
             {
                 x = centerOfMass.Value.x,
-                y = centerOfMass.Value.y,
-                z = transform.position.z
+                y = centerOfMass.Value.y + 0.06f,
+                z = centerOfMass.Value.z - 0.125f
             };
+
+            transform.LookAt(new Vector3 {
+                x = centerOfMass.Value.x,
+                y = centerOfMass.Value.y,
+                z = centerOfMass.Value.z
+            });
+
         } else {
             transform.position = arenaCenterTransform;
         }

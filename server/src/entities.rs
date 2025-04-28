@@ -1,9 +1,7 @@
-use spacetimedb::{table, Identity, ScheduleAt, SpacetimeType, Timestamp};
+use spacetimedb::{table, Identity, ScheduleAt, Timestamp};
 
-use crate::reducers::spawn_cow;
+use crate::{math::DbVector3, reducers::{move_all_players, spawn_cow}};
 
-// We're using this table as a singleton, so in this table
-// there only be one element where the `id` is 0.
 #[spacetimedb::table(name = config, public)]
 pub struct Config {
     #[primary_key]
@@ -11,25 +9,9 @@ pub struct Config {
     pub world_size: u64,
 }
 
-// This allows us to store 2D points in tables.
-#[derive(SpacetimeType, Clone, Debug)]
-pub struct DbVector2 {
-    pub x: f32,
-    pub y: f32,
-}
-
-#[derive(SpacetimeType, Clone, Debug)]
-pub struct DbVector3 {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
-}
-
 #[spacetimedb::table(name = entity, public)]
 #[derive(Debug, Clone)]
 pub struct Entity {
-    // The `auto_inc` attribute indicates to SpacetimeDB that
-    // this value should be determined by SpacetimeDB on insert.
     #[auto_inc]
     #[primary_key]
     pub entity_id: u32,
@@ -54,14 +36,6 @@ pub struct Cow {
     pub entity_id: u32,
 }
 
-#[spacetimedb::table(name = spawn_cow_timer, scheduled(spawn_cow))]
-pub struct SpawnCowTimer {
-    #[primary_key]
-    #[auto_inc]
-    pub scheduled_id: u64,
-    pub scheduled_at: ScheduleAt
-}
-
 #[table(name = player, public)]
 #[table(name = logged_out_player)]
 pub struct Player {
@@ -78,4 +52,21 @@ pub struct Message {
     pub sender: Identity,
     pub sent: Timestamp,
     pub text: String,
+}
+
+// Timers
+#[spacetimedb::table(name = spawn_cow_timer, scheduled(spawn_cow))]
+pub struct SpawnCowTimer {
+    #[primary_key]
+    #[auto_inc]
+    pub scheduled_id: u64,
+    pub scheduled_at: ScheduleAt
+}
+
+#[spacetimedb::table(name = move_all_players_timer, scheduled(move_all_players))]
+pub struct MoveAllPlayersTimer {
+    #[primary_key]
+    #[auto_inc]
+    pub scheduled_id: u64,
+    pub scheduled_at: spacetimedb::ScheduleAt,
 }

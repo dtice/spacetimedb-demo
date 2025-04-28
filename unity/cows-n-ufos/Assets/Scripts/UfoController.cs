@@ -4,7 +4,7 @@ using SpacetimeDB;
 using SpacetimeDB.Types;
 using UnityEngine;
 
-public class CircleController : EntityController
+public class UfoController : EntityController
 {
 	public static Color[] ColorPalette = new[]
 	{
@@ -29,13 +29,13 @@ public class CircleController : EntityController
 
     private PlayerController Owner;
 
-    public void Spawn(Circle circle, PlayerController owner)
+    public void Spawn(Ufo ufo, PlayerController owner)
     {
-        base.Spawn(circle.EntityId);
-		SetColor(ColorPalette[circle.PlayerId % ColorPalette.Length]);
+        base.Spawn(ufo.EntityId);
+		SetColor(ColorPalette[ufo.PlayerId % ColorPalette.Length]);
 
         this.Owner = owner;
-        GetComponentInChildren<TMPro.TextMeshProUGUI>().text = owner.Username;
+        GetComponentInChildren<TMPro.TextMeshPro>().text = owner.Username;
     }
 
 	public override void OnDelete(EventContext context)

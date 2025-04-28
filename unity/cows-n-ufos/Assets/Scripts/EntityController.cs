@@ -31,7 +31,7 @@ public abstract class EntityController : MonoBehaviour
 
 	public void SetColor(Color color)
 	{
-		GetComponent<SpriteRenderer>().material.SetColor(ShaderColorProperty, color);
+		GetComponent<MeshRenderer>().material.SetColor(ShaderColorProperty, color);
 	}
 
 	public virtual void OnEntityUpdated(Entity newVal)
@@ -58,7 +58,7 @@ public abstract class EntityController : MonoBehaviour
 	public static Vector3 MassToScale(uint mass)
 	{
 		var diameter = MassToDiameter(mass);
-		return new Vector3(diameter, diameter, 1);
+		return new Vector3(diameter, diameter, diameter);
 	}
 
 	public static float MassToRadius(uint mass) => Mathf.Sqrt(mass);

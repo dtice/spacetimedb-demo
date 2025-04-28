@@ -59,14 +59,16 @@ public class GameManager : MonoBehaviour
             new Vector2(borderThickness, worldSize + borderThickness * 2.0f)); //East
         CreateBorderCube(new Vector2(-borderThickness / 2, worldSize / 2.0f),
             new Vector2(borderThickness, worldSize + borderThickness * 2.0f)); //West
+
+        CameraController.WorldSize = worldSize;
     }
 
     private void CreateBorderCube(Vector2 position, Vector2 scale)
     {
         var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
         cube.name = "Border";
-        cube.transform.localScale = new Vector3(scale.x, scale.y, 1);
-        cube.transform.position = new Vector3(position.x, position.y, 1);
+        cube.transform.localScale = new Vector3(scale.x, 1, scale.y);
+        cube.transform.position = new Vector3(position.x, 0.5f, position.y);
         cube.GetComponent<MeshRenderer>().material = borderMaterial;
     }
 
@@ -168,6 +170,8 @@ public class GameManager : MonoBehaviour
 
         var worldSize = Conn.Db.Config.Id.Find(0).WorldSize;
         SetupArena(worldSize);
+
+        ctx.Reducers.EnterGame("Scrill");
     }
 
     public static bool IsConnected()
