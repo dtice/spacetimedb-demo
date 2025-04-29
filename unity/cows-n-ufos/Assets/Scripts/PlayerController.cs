@@ -11,7 +11,7 @@ public class PlayerController : MonoBehaviour
 
     public static PlayerController Local { get; private set; }
 
-    private uint PlayerId;
+    public uint PlayerId;
     private float LastMovementSendTimestamp;
     private Vector2? LockInputPosition;
     private List<UfoController> OwnedUfos = new List<UfoController>();
