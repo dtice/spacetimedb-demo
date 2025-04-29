@@ -230,12 +230,12 @@ pub fn disconnect(ctx: &ReducerContext) -> Result<(), String> {
         .find(&ctx.sender)
         .ok_or("Player not found")?;
     let player_id = player.player_id;
-    ctx.db.logged_out_player().insert(player);
     ctx.db.player().identity().delete(&ctx.sender);
 
-    for player in ctx.db.ufo().player_id().filter(&player_id) {
-        ctx.db.entity().entity_id().delete(&player.entity_id);
-        ctx.db.ufo().entity_id().delete(&player.entity_id);
+    for ufo in ctx.db.ufo().player_id().filter(&player_id) {
+        log::info!("Deleting UFO");
+        ctx.db.entity().entity_id().delete(&ufo.entity_id);
+        ctx.db.ufo().entity_id().delete(&ufo.entity_id);
     }
 
     Ok(())

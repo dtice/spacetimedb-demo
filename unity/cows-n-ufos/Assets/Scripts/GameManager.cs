@@ -7,7 +7,7 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    const string SERVER_URL = "https://spacetime.dilltice.com";
+    const string SERVER_URL = "127.0.0.1:3000";
     const string MODULE_NAME = "cows-n-ufos";
 
     public static event Action OnConnected;
@@ -20,9 +20,7 @@ public class GameManager : MonoBehaviour
     public static Identity LocalIdentity { get; private set; }
     public static DbConnection Conn { get; private set; }
 
-    [SerializeField]
     public static Dictionary<uint, EntityController> Entities = new Dictionary<uint, EntityController>();
-    [SerializeField]
     public static Dictionary<uint, PlayerController> Players = new Dictionary<uint, PlayerController>();
 
     private void Start()
@@ -49,18 +47,6 @@ public class GameManager : MonoBehaviour
         // Building the connection will establish a connection to the SpacetimeDB
         // server.
         Conn = builder.Build();
-    }
-
-    private void Update()
-    {
-        foreach (var entity in Entities)
-        {
-            Debug.Log("Entity - " + entity.Value.EntityId);
-        }
-        foreach (var entity in Players)
-        {
-            Debug.Log("Player - " + entity.Value.PlayerId);
-        }
     }
 
     private void SetupArena(float worldSize)
