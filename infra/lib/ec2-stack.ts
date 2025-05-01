@@ -3,10 +3,15 @@ import { Construct } from 'constructs';
 import { VPCResources } from './constructs/vpc';
 import { ServerResources } from './constructs/server';
 import { EC2ExampleProps, envValidator } from './utils/env-validator';
+import { Instance, SecurityGroup, Vpc } from 'aws-cdk-lib/aws-ec2';
 
 export interface EC2StackProps extends StackProps, EC2ExampleProps {}
 
 export class EC2Stack extends Stack {
+  public readonly instance: Instance;
+  public readonly vpc: Vpc;
+  public readonly securityGroup: SecurityGroup;
+
   constructor(scope: Construct, id: string, props: EC2StackProps) {
     super(scope, id, props);
 
@@ -28,6 +33,10 @@ export class EC2Stack extends Stack {
       instanceSize: instanceSize.toLowerCase(),
     });
 
+    this.vpc = vpcResources.vpc;
+    this.securityGroup = vpcResources.sshSecurityGroup;
+    this.instance = serverResources.instance;
+
     // SSM Command to start a session
     new CfnOutput(this, 'ssmCommand', {
       value: `aws ssm start-session --target ${serverResources.instance.instanceId}`,
@@ -37,5 +46,10 @@ export class EC2Stack extends Stack {
     new CfnOutput(this, 'sshCommand', {
       value: `ssh ec2-user@${serverResources.instance.instancePublicDnsName}`,
     });
+
+    new CfnOutput(this, 'InstanceDnsName', {
+      value: this.instance.instancePublicDnsName,
+      exportName: 'EC2InstanceOptions'
+    })
   }
 }

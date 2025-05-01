@@ -13,6 +13,8 @@ import {
     UserData,
     MachineImage,
     AmazonLinuxCpuType,
+    Peer,
+    Port,
 } from 'aws-cdk-lib/aws-ec2';
 import {
     Role,
@@ -107,6 +109,10 @@ export class ServerResources extends Construct {
             'ec2InstanceSecurityGroup',
             { vpc: props.vpc, allowAllOutbound: true },
         );
+
+        // Allow HTTP and HTTPS inbound traffic on TCP port 80 and 443
+        ec2InstanceSecurityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(80), 'Allow HTTP');
+        ec2InstanceSecurityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(443), 'Allow HTTPS');
 
         // Determine the correct CPUType and Instance Class based on the props passed in
         if (props.cpuType == 'ARM64') {

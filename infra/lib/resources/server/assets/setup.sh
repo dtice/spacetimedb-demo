@@ -14,19 +14,13 @@ sudo systemctl enable spacetimedb
 sudo systemctl start spacetimedb
 
 # Install and configure nginx
-sudo apt update
-sudo apt install nginx -y
-sudo cp /home/spacetimedb/spacetimedb.conf /etc/nginx/sites-available/
-sudo ln -s /etc/nginx/sites-available/spacetimedb.conf /etc/nginx/sites-enabled/
-sudo rm /etc/nginx/sites-enabled/default
+sudo yum update
+sudo yum install nginx -y
+sudo cp /home/spacetimedb/spacetimedb.conf /etc/nginx/conf.d/
 sudo systemctl restart nginx
-
-# Configure firewall
-sudo ufw allow 'Nginx Full'
-sudo ufw reload
 
 # Install and configure certbot
-sudo apt install certbot python3-certbot-nginx -y
-sudo certbot --nginx -d spacetime.dilltice.com
-sudo systemctl restart nginx
-sudo systemctl status certbot.timer
+# sudo yum install certbot python3-certbot-nginx -y
+# sudo certbot --nginx -d spacetime.dilltice.com
+# sudo systemctl restart nginx
+# sudo systemctl status certbot.timer
