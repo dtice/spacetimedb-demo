@@ -4,7 +4,7 @@ use spacetimedb::{rand::Rng, reducer, ReducerContext, ScheduleAt, Table, Timesta
 
 use crate::{
     constants::{COW_MASS_MAX, COW_MASS_MIN, TARGET_COW_COUNT}, entities::{
-        config, cow, entity, logged_out_player, message, move_all_players_timer, player, spawn_cow_timer, ufo, Config, Cow, Entity, Message, MoveAllPlayersTimer, Player, SpawnCowTimer, Ufo
+        config, cow, entity, message, move_all_players_timer, player, spawn_cow_timer, move_all_cows_timer, change_cow_direction_timer, ufo, Config, Cow, Entity, Message, MoveAllPlayersTimer, MoveAllCowsTimer, Player, SpawnCowTimer, Ufo, ChangeCowDirectionTimer
     }, math::{DbVector2, DbVector3}, util::{mass_to_cow_size, mass_to_max_move_speed, validate_message, validate_name}
 };
 
@@ -15,13 +15,26 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
         id: 0,
         world_size: 10,
     })?;
-    ctx.db.spawn_cow_timer().try_insert(SpawnCowTimer {
+    ctx.db
+    .spawn_cow_timer().try_insert(SpawnCowTimer {
         scheduled_id: 0,
         scheduled_at: ScheduleAt::Interval(Duration::from_millis(500).into()),
     })?;
     ctx.db
     .move_all_players_timer()
     .try_insert(MoveAllPlayersTimer {
+        scheduled_id: 0,
+        scheduled_at: ScheduleAt::Interval(Duration::from_millis(50).into()),
+    })?;
+    ctx.db
+    .change_cow_direction_timer()
+    .try_insert(ChangeCowDirectionTimer {
+        scheduled_id: 0,
+        scheduled_at: ScheduleAt::Interval(Duration::from_millis(1000).into()),
+    })?;
+    ctx.db
+    .move_all_cows_timer()
+    .try_insert(MoveAllCowsTimer {
         scheduled_id: 0,
         scheduled_at: ScheduleAt::Interval(Duration::from_millis(50).into()),
     })?;
@@ -113,6 +126,30 @@ pub fn update_player_input(ctx: &ReducerContext, direction: DbVector2) -> Result
 }
 
 #[spacetimedb::reducer]
+pub fn change_cow_directions(ctx: &ReducerContext, _timer: ChangeCowDirectionTimer) -> Result<(), String> {
+    // IDK WHAT IM DOING
+    log::info!("Cows changing direction");
+    for mut cow in ctx.db.cow().iter() {
+        let entity = ctx.db.entity().entity_id().find(&cow.entity_id);
+        if !entity.is_some() || cow.is_being_abducted {
+            continue;
+        }
+        let entity = entity.unwrap();
+        let mut rng = ctx.rng();
+        let rand_x = rng.gen_range(-100..100) as f32;
+        let rand_z = rng.gen_range(-100..100) as f32;
+        cow.direction = DbVector3 {
+            x: rand_x,
+            y: 0.0,
+            z: rand_z
+        }.normalized();
+        ctx.db.entity().entity_id().update(entity);
+        ctx.db.cow().entity_id().update(cow);
+    }
+    Ok(())
+}
+
+#[spacetimedb::reducer]
 pub fn move_all_players(ctx: &ReducerContext, _timer: MoveAllPlayersTimer) -> Result<(), String> {
     let world_size = ctx
         .db
@@ -131,7 +168,7 @@ pub fn move_all_players(ctx: &ReducerContext, _timer: MoveAllPlayersTimer) -> Re
         }
         let mut ufo_entity = ufo_entity.unwrap();
         let ufo_size = mass_to_cow_size(ufo_entity.mass);
-        let direction = ufo.direction * ufo.speed;
+        let direction = ufo.direction * ufo.speed / 60.0;
         let new_pos =
             ufo_entity.position + direction * mass_to_max_move_speed(ufo_entity.mass);
         let min = ufo_size;
@@ -141,6 +178,35 @@ pub fn move_all_players(ctx: &ReducerContext, _timer: MoveAllPlayersTimer) -> Re
         ctx.db.entity().entity_id().update(ufo_entity);
     }
 
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn move_all_cows(ctx: &ReducerContext, _timer: MoveAllCowsTimer) -> Result<(), String> {
+    // IDK WHAT IM DOING
+    log::info!("Cows moving");
+    let world_size = ctx
+        .db
+        .config()
+        .id()
+        .find(0)
+        .ok_or("Config not found")?
+        .world_size;
+
+    for cow in ctx.db.cow().iter() {
+        let cow_entity = ctx.db.entity().entity_id().find(&cow.entity_id);
+        if !cow_entity.is_some() || cow.is_being_abducted {
+            continue;
+        }
+        let mut cow_entity = cow_entity.unwrap();
+        let direction = cow.direction * cow.speed / 60.0;
+        let new_pos = cow_entity.position + direction * mass_to_max_move_speed(cow_entity.mass);
+        let size = mass_to_cow_size(cow_entity.mass);
+        let max = world_size as f32 - size;
+        cow_entity.position.x = new_pos.x.clamp(size, max);
+        cow_entity.position.z = new_pos.z.clamp(size, max);
+        ctx.db.entity().entity_id().update(cow_entity);
+    }
     Ok(())
 }
 
@@ -173,9 +239,19 @@ pub fn spawn_cow(ctx: &ReducerContext, _timer: SpawnCowTimer) -> Result<(), Stri
             position: DbVector3 { x, y, z },
             mass: cow_mass,
         })?;
-
+        let rand_x = rng.gen_range(1.0..100.0) as f32;
+        let rand_z = rng.gen_range(1.0..100.0) as f32;
+        let direction = DbVector3 {
+                x: rand_x,
+                y: 0.0,
+                z: rand_z,
+        };
+        log::info!("Direction: {:?}", direction);
         ctx.db.cow().try_insert(Cow {
             entity_id: entity.entity_id,
+            direction: direction,
+            is_being_abducted: false,
+            speed: 1.0,
         })?;
         cow_count += 1;
         log::info!("Spawned cow! {}", entity.entity_id);

@@ -15,14 +15,29 @@ namespace SpacetimeDB.Types
     {
         [DataMember(Name = "entity_id")]
         public uint EntityId;
+        [DataMember(Name = "direction")]
+        public DbVector3 Direction;
+        [DataMember(Name = "speed")]
+        public float Speed;
+        [DataMember(Name = "is_being_abducted")]
+        public bool IsBeingAbducted;
 
-        public Cow(uint EntityId)
+        public Cow(
+            uint EntityId,
+            DbVector3 Direction,
+            float Speed,
+            bool IsBeingAbducted
+        )
         {
             this.EntityId = EntityId;
+            this.Direction = Direction;
+            this.Speed = Speed;
+            this.IsBeingAbducted = IsBeingAbducted;
         }
 
         public Cow()
         {
+            this.Direction = new();
         }
     }
 }

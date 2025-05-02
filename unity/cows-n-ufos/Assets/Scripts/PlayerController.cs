@@ -63,7 +63,8 @@ public class PlayerController : MonoBehaviour
 
             var direction = (mousePosition - centerOfScreen) / (screenSize.y / 3);
             if (testInputEnabled) { direction = testInput; }
-            GameManager.Conn.Reducers.UpdatePlayerInput(direction);
+            GameManager.Conn.Reducers.UpdatePlayerInput(new Vector2(0.0f, 0.0f));
+            // GameManager.Conn.Reducers.UpdatePlayerInput(direction);
         }
     }
 

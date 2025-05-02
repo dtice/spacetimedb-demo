@@ -20,11 +20,13 @@ namespace SpacetimeDB.Types
     {
         public RemoteTables(DbConnection conn)
         {
+            AddTable(ChangeCowDirectionTimer = new(conn));
             AddTable(Config = new(conn));
             AddTable(Cow = new(conn));
             AddTable(Entity = new(conn));
             AddTable(LoggedOutPlayer = new(conn));
             AddTable(Message = new(conn));
+            AddTable(MoveAllCowsTimer = new(conn));
             AddTable(MoveAllPlayersTimer = new(conn));
             AddTable(Player = new(conn));
             AddTable(SpawnCowTimer = new(conn));
@@ -437,9 +439,11 @@ namespace SpacetimeDB.Types
             var encodedArgs = update.ReducerCall.Args;
             return update.ReducerCall.ReducerName switch
             {
+                "change_cow_directions" => BSATNHelpers.Decode<Reducer.ChangeCowDirections>(encodedArgs),
                 "connect" => BSATNHelpers.Decode<Reducer.Connect>(encodedArgs),
                 "disconnect" => BSATNHelpers.Decode<Reducer.Disconnect>(encodedArgs),
                 "enter_game" => BSATNHelpers.Decode<Reducer.EnterGame>(encodedArgs),
+                "move_all_cows" => BSATNHelpers.Decode<Reducer.MoveAllCows>(encodedArgs),
                 "move_all_players" => BSATNHelpers.Decode<Reducer.MoveAllPlayers>(encodedArgs),
                 "send_message" => BSATNHelpers.Decode<Reducer.SendMessage>(encodedArgs),
                 "set_name" => BSATNHelpers.Decode<Reducer.SetName>(encodedArgs),
@@ -466,9 +470,11 @@ namespace SpacetimeDB.Types
             var eventContext = (ReducerEventContext)context;
             return reducer switch
             {
+                Reducer.ChangeCowDirections args => Reducers.InvokeChangeCowDirections(eventContext, args),
                 Reducer.Connect args => Reducers.InvokeConnect(eventContext, args),
                 Reducer.Disconnect args => Reducers.InvokeDisconnect(eventContext, args),
                 Reducer.EnterGame args => Reducers.InvokeEnterGame(eventContext, args),
+                Reducer.MoveAllCows args => Reducers.InvokeMoveAllCows(eventContext, args),
                 Reducer.MoveAllPlayers args => Reducers.InvokeMoveAllPlayers(eventContext, args),
                 Reducer.SendMessage args => Reducers.InvokeSendMessage(eventContext, args),
                 Reducer.SetName args => Reducers.InvokeSetName(eventContext, args),

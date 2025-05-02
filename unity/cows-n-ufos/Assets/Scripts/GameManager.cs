@@ -19,6 +19,7 @@ public class GameManager : MonoBehaviour
 	public static GameManager Instance { get; private set; }
     public static Identity LocalIdentity { get; private set; }
     public static DbConnection Conn { get; private set; }
+    public static DbConnection DB { get; private set; }
 
     public static Dictionary<uint, EntityController> Entities = new Dictionary<uint, EntityController>();
     public static Dictionary<uint, PlayerController> Players = new Dictionary<uint, PlayerController>();
@@ -83,8 +84,10 @@ public class GameManager : MonoBehaviour
         conn.Db.Entity.OnUpdate += EntityOnUpdate;
         conn.Db.Entity.OnDelete += EntityOnDelete;
         conn.Db.Cow.OnInsert += CowOnInsert;
+        conn.Db.Cow.OnUpdate += CowOnUpdate;
         conn.Db.Player.OnInsert += PlayerOnInsert;
         conn.Db.Player.OnDelete += PlayerOnDelete;
+        DB = conn;
 
         OnConnected?.Invoke();
 
@@ -107,6 +110,7 @@ public class GameManager : MonoBehaviour
         {
             return;
         }
+        Debug.Log("Entity Updated: " + newEntity.EntityId);
         entityController.OnEntityUpdated(newEntity);
     }
 
@@ -122,6 +126,12 @@ public class GameManager : MonoBehaviour
     {
         var entityController = PrefabManager.SpawnCow(insertedValue);
         Entities.Add(insertedValue.EntityId, entityController);
+    }
+
+    private static void CowOnUpdate(EventContext context, Cow oldCow, Cow newCow)
+    {
+        var entityController = Entities[oldCow.EntityId];
+        (entityController as CowController).OnCowUpdated(context, oldCow, newCow);
     }
 
     private static void PlayerOnInsert(EventContext context, Player insertedPlayer)

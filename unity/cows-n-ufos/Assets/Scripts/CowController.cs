@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class CowController : EntityController
 {
+
     public static Color[] ColorPalette = new[]
     {
         (Color)new Color32(119, 252, 173, 255),
@@ -18,5 +19,13 @@ public class CowController : EntityController
     {
         base.Spawn(cow.EntityId);
         SetColor(ColorPalette[EntityId % ColorPalette.Length]);
+        // IDK WHAT IM DOING
+    }
+
+    public void OnCowUpdated(EventContext context, Cow oldCow, Cow newCow)
+    {
+        Debug.Log("Cow Updated: " + newCow.EntityId);
+        Vector3 direction = new Vector3(newCow.Direction.X, transform.position.y, newCow.Direction.Z);
+        transform.LookAt(direction);
     }
 }
