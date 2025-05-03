@@ -35,7 +35,7 @@ public class UfoController : EntityController
 		SetColor(ColorPalette[ufo.PlayerId % ColorPalette.Length]);
 
         this.Owner = owner;
-        GetComponentInChildren<TMPro.TextMeshPro>().text = owner.Username;
+        GetComponentInChildren<TMPro.TextMeshPro>().text = owner.username;
     }
 
 	public override void OnDelete(EventContext context)

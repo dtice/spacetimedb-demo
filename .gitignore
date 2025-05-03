@@ -1,5 +1,5 @@
 server/spacetime.log
-server/.vs
-.vs
 godot/
 unity/cows-n-ufos/Assets/autogen
+*.idea
+*.vs

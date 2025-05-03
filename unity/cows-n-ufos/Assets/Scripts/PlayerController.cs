@@ -6,54 +6,54 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    const int SEND_UPDATES_PER_SEC = 20;
-    const float SEND_UPDATES_FREQUENCY = 1f / SEND_UPDATES_PER_SEC;
+    private const int SEND_UPDATES_PER_SEC = 20;
+    private const float SEND_UPDATES_FREQUENCY = 1f / SEND_UPDATES_PER_SEC;
 
-    public static PlayerController Local { get; private set; }
+    public static PlayerController local { get; private set; }
 
-    public uint PlayerId;
-    private float LastMovementSendTimestamp;
-    private Vector2? LockInputPosition;
-    private List<UfoController> OwnedUfos = new List<UfoController>();
+    public uint playerId;
+    private float lastMovementSendTimestamp;
+    private Vector2? lockInputPosition;
+    private List<UfoController> ownedUfos = new List<UfoController>();
 
-    public string Username => GameManager.Conn.Db.Player.PlayerId.Find(PlayerId).Name;
-    public int NumberOfOwnedUfos => OwnedUfos.Count;
-    public bool IsLocalPlayer => this == Local;
+    public string username => GameManager.Conn.Db.Player.PlayerId.Find(playerId)?.Name;
+    public int numberOfOwnedUfos => ownedUfos.Count;
+    public bool isLocalPlayer => this == local;
 
     public void Initialize(Player player)
     {
-        PlayerId = player.PlayerId;
+        playerId = player.PlayerId;
         if (player.Identity == GameManager.LocalIdentity)
         {
-            Local = this;
+            local = this;
         }
     }
 
     public void Update()
     {
-        if (!IsLocalPlayer || NumberOfOwnedUfos == 0)
+        if (!isLocalPlayer || numberOfOwnedUfos == 0)
         {
             return;
         }
 
         if (Input.GetKeyDown(KeyCode.Q))
         {
-            if (LockInputPosition.HasValue)
+            if (lockInputPosition.HasValue)
             {
-                LockInputPosition = null;
+                lockInputPosition = null;
             }
             else
             {
-                LockInputPosition = (Vector2)Input.mousePosition;
+                lockInputPosition = (Vector2)Input.mousePosition;
             }
         }
 
         // Throttled input requests
-        if (Time.time - LastMovementSendTimestamp >= SEND_UPDATES_FREQUENCY)
+        if (Time.time - lastMovementSendTimestamp >= SEND_UPDATES_FREQUENCY)
         {
-            LastMovementSendTimestamp = Time.time;
+            lastMovementSendTimestamp = Time.time;
 
-            var mousePosition = LockInputPosition ?? (Vector2)Input.mousePosition;
+            var mousePosition = lockInputPosition ?? (Vector2)Input.mousePosition;
             var screenSize = new Vector2
             {
                 x = Screen.width,
@@ -71,25 +71,25 @@ public class PlayerController : MonoBehaviour
     private void OnDestroy()
     {
         // If we have any ufos, destroy them
-        foreach (var ufo in OwnedUfos)
+        foreach (var ufo in ownedUfos)
         {
             if (ufo != null)
             {
                 Destroy(ufo.gameObject);
             }
         }
-        OwnedUfos.Clear();
+        ownedUfos.Clear();
     }
 
     public void OnUfoSpawned(UfoController ufo)
     {
-        OwnedUfos.Add(ufo);
+        ownedUfos.Add(ufo);
     }
 
     public void OnUfoDeleted(UfoController deletedUfo)
     {
         // This means we got eaten
-        if (OwnedUfos.Remove(deletedUfo) && IsLocalPlayer && OwnedUfos.Count == 0)
+        if (ownedUfos.Remove(deletedUfo) && isLocalPlayer && ownedUfos.Count == 0)
         {
             // DeathScreen.Instance.SetVisible(true);
         }
@@ -97,21 +97,21 @@ public class PlayerController : MonoBehaviour
 
     public uint TotalMass()
     {
-        return (uint)OwnedUfos
+        return (uint)ownedUfos
             .Select(ufo => GameManager.Conn.Db.Entity.EntityId.Find(ufo.EntityId))
             .Sum(e => e?.Mass ?? 0); //If this entity is being deleted on the same frame that we're moving, we can have a null entity here.
     }
 
     public Vector3? CenterOfMass()
     {
-        if (OwnedUfos.Count == 0)
+        if (ownedUfos.Count == 0)
         {
             return null;
         }
 
         Vector3 totalPos = Vector3.zero;
         float totalMass = 0;
-        foreach (var ufo in OwnedUfos)
+        foreach (var ufo in ownedUfos)
         {
             var entity = GameManager.Conn.Db.Entity.EntityId.Find(ufo.EntityId);
             var position = ufo.transform.position;
@@ -124,7 +124,7 @@ public class PlayerController : MonoBehaviour
 
     private void OnGUI()
     {
-        if (!IsLocalPlayer || !GameManager.IsConnected())
+        if (!isLocalPlayer || !GameManager.IsConnected())
         {
             return;
         }
