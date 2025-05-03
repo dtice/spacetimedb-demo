@@ -1,4 +1,4 @@
-use crate::constants::{START_PLAYER_MASS, START_PLAYER_SPEED};
+use crate::{util::constants::{START_PLAYER_MASS, START_PLAYER_SPEED}};
 
 pub fn validate_name(name: String) -> Result<String, String> {
     if name.is_empty() {
