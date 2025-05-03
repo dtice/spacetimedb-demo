@@ -4,15 +4,18 @@ use std::time::Duration;
 use spacetimedb::{reducer, ReducerContext, ScheduleAt, Table};
 use spacetimedb::rand::Rng;
 
-use crate::util::math::DbVector3;
-use crate::util::util::{mass_to_cow_size, mass_to_max_move_speed, validate_message, validate_name};
-use crate::entity::entity::{Entity, entity};
-use crate::entity::cow::{
-    spawn_cow_timer, SpawnCowTimer, 
-    move_all_cows_timer, MoveAllCowsTimer, 
-    change_cow_direction_timer, ChangeCowDirectionTimer};
-use crate::entity::ufo::{ufo, Ufo};
-use crate::player::player::{Player, player};
+use crate::{
+    util::math::DbVector3,
+    util::util::{mass_to_cow_size, mass_to_max_move_speed, validate_message, validate_name},
+    entity::entity::{Entity, entity},
+    entity::cow::{
+        spawn_cow_timer, SpawnCowTimer,
+        move_all_cows_timer, MoveAllCowsTimer,
+        change_cow_direction_timer, ChangeCowDirectionTimer
+    },
+    entity::ufo::{ufo, Ufo},
+    system::player::{Player, player}
+};
 
 #[spacetimedb::table(name = config, public)]
 pub struct Config {

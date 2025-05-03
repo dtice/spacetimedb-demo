@@ -1,7 +1,9 @@
 use spacetimedb::{reducer, table, Identity, ReducerContext};
-use crate::entity::ufo::ufo;
-use crate::util::math::{DbVector2, DbVector3};
-use crate::util::util::validate_name;
+use crate::{
+    entity::ufo::ufo,
+    util::math::{DbVector2, DbVector3},
+    util::util::validate_name
+};
 
 #[table(name = player, public)]
 #[table(name = logged_out_player)]

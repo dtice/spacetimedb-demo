@@ -1,11 +1,13 @@
 use spacetimedb::{reducer, ReducerContext, ScheduleAt, Table};
 use spacetimedb::rand::Rng;
-use crate::entity::entity::{entity, Entity};
-use crate::player::player::player;
-use crate::system::system::config;
-use crate::util::constants::{COW_MASS_MAX, COW_MASS_MIN, TARGET_COW_COUNT};
-use crate::util::math::DbVector3;
-use crate::util::util::{mass_to_cow_size, mass_to_max_move_speed};
+use crate::{
+    entity::entity::{entity, Entity},
+    system::player::player,
+    system::system::config,
+    util::constants::{COW_MASS_MAX, COW_MASS_MIN, TARGET_COW_COUNT},
+    util::math::DbVector3,
+    util::util::{mass_to_cow_size, mass_to_max_move_speed},
+};
 
 #[spacetimedb::table(name = cow, public)]
 pub struct Cow {
