@@ -6,18 +6,19 @@ use spacetimedb::rand::Rng;
 
 use crate::{
     util::math::DbVector3,
-    util::util::{mass_to_cow_size, mass_to_max_move_speed, validate_message, validate_name},
+    util::util::mass_to_max_move_speed,
     entity::entity::{Entity, entity},
     entity::cow::{
         spawn_cow_timer, SpawnCowTimer,
         move_all_cows_timer, MoveAllCowsTimer,
-        change_cow_direction_timer, ChangeCowDirectionTimer
+        change_cow_direction_timer, ChangeCowDirectionTimer,
+        mass_to_cow_size,
     },
     entity::ufo::{ufo, Ufo},
-    system::player::{Player, player}
+    system::player::{Player, player, validate_name, validate_message},
 };
 
-#[spacetimedb::table(name = config, public)]
+#[table(name = config, public)]
 pub struct Config {
     #[primary_key]
     pub id: u32,
@@ -31,6 +32,16 @@ pub struct Message {
     pub text: String,
 }
 
+// Timers
+#[table(name = move_all_players_timer, scheduled(move_all_players))]
+pub struct MoveAllPlayersTimer {
+    #[primary_key]
+    #[auto_inc]
+    pub scheduled_id: u64,
+    pub scheduled_at: ScheduleAt
+}
+
+// Reducers
 #[reducer(init)]
 pub fn init(ctx: &ReducerContext) -> Result<(), String> {
     log::info!("Initializing...");
@@ -204,12 +215,4 @@ pub fn move_all_players(ctx: &ReducerContext, _timer: MoveAllPlayersTimer) -> Re
     }
 
     Ok(())
-}
-
-#[spacetimedb::table(name = move_all_players_timer, scheduled(move_all_players))]
-pub struct MoveAllPlayersTimer {
-    #[primary_key]
-    #[auto_inc]
-    pub scheduled_id: u64,
-    pub scheduled_at: ScheduleAt
 }

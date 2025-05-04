@@ -1,21 +1,47 @@
 use spacetimedb::{reducer, ReducerContext, ScheduleAt, Table};
 use spacetimedb::rand::Rng;
+use spacetimedb::table;
 use crate::{
     entity::entity::{entity, Entity},
     system::player::player,
     system::system::config,
     util::constants::{COW_MASS_MAX, COW_MASS_MIN, TARGET_COW_COUNT},
     util::math::DbVector3,
-    util::util::{mass_to_cow_size, mass_to_max_move_speed},
+    util::util::mass_to_max_move_speed,
 };
 
-#[spacetimedb::table(name = cow, public)]
+#[table(name = cow, public)]
 pub struct Cow {
     #[primary_key]
     pub entity_id: u32,
     pub direction: DbVector3,
     pub speed: f32,
     pub is_being_abducted: bool
+}
+
+// Timers
+#[table(name = spawn_cow_timer, scheduled(spawn_cow))]
+pub struct SpawnCowTimer {
+    #[primary_key]
+    #[auto_inc]
+    pub scheduled_id: u64,
+    pub scheduled_at: ScheduleAt
+}
+
+#[table(name = move_all_cows_timer, scheduled(move_all_cows))]
+pub struct MoveAllCowsTimer {
+    #[primary_key]
+    #[auto_inc]
+    pub scheduled_id: u64,
+    pub scheduled_at: ScheduleAt
+}
+
+#[table(name = change_cow_direction_timer, scheduled(change_cow_directions))]
+pub struct ChangeCowDirectionTimer {
+    #[primary_key]
+    #[auto_inc]
+    pub scheduled_id: u64,
+    pub scheduled_at: ScheduleAt
 }
 
 // Reducers
@@ -121,27 +147,9 @@ pub fn spawn_cow(ctx: &ReducerContext, _timer: SpawnCowTimer) -> Result<(), Stri
     Ok(())
 }
 
-// Timers
-#[spacetimedb::table(name = spawn_cow_timer, scheduled(spawn_cow))]
-pub struct SpawnCowTimer {
-    #[primary_key]
-    #[auto_inc]
-    pub scheduled_id: u64,
-    pub scheduled_at: ScheduleAt
-}
-
-#[spacetimedb::table(name = move_all_cows_timer, scheduled(move_all_cows))]
-pub struct MoveAllCowsTimer {
-    #[primary_key]
-    #[auto_inc]
-    pub scheduled_id: u64,
-    pub scheduled_at: ScheduleAt
-}
-
-#[spacetimedb::table(name = change_cow_direction_timer, scheduled(change_cow_directions))]
-pub struct ChangeCowDirectionTimer {
-    #[primary_key]
-    #[auto_inc]
-    pub scheduled_id: u64,
-    pub scheduled_at: ScheduleAt
+pub fn mass_to_cow_size(mass: u32) -> f32 {
+    // Convert mass to size in meters
+    // Assuming mass is in kg and size is in meters
+    // This is a placeholder conversion, adjust as needed
+    (mass as f32).sqrt()
 }

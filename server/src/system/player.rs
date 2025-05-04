@@ -1,8 +1,7 @@
 use spacetimedb::{reducer, table, Identity, ReducerContext};
 use crate::{
     entity::ufo::ufo,
-    util::math::{DbVector2, DbVector3},
-    util::util::validate_name
+    util::math::{DbVector2, DbVector3}
 };
 
 #[table(name = player, public)]
@@ -16,6 +15,7 @@ pub struct Player {
     pub name: String,
 }
 
+// Reducers
 #[reducer]
 pub fn update_player_input(ctx: &ReducerContext, direction: DbVector2) -> Result<(), String> {
     let player = ctx
@@ -45,5 +45,21 @@ pub fn set_name(ctx: &ReducerContext, name: String) -> Result<(), String> {
         Ok(())
     } else {
         Err("Cannot set name for unknown user".to_string())
+    }
+}
+
+pub fn validate_name(name: String) -> Result<String, String> {
+    if name.is_empty() {
+        Err("Names must not be empty".to_string())
+    } else {
+        Ok(name)
+    }
+}
+
+pub fn validate_message(text: String) -> Result<String, String> {
+    if text.is_empty() {
+        Err("Messages must not be empty".to_string())
+    } else {
+        Ok(text)
     }
 }
