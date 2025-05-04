@@ -7,8 +7,8 @@ public class PrefabManager : MonoBehaviour
 {
 	private static PrefabManager Instance;
 
-	public UfoController UfoPrefab;
-	public CowController CowPrefab;
+	public GameObject UfoPrefab;
+	public GameObject CowPrefab;
 	public PlayerController PlayerPrefab;
 
 	private void Awake()
@@ -18,7 +18,8 @@ public class PrefabManager : MonoBehaviour
 
 	public static UfoController SpawnUfo(Ufo ufo, PlayerController owner)
 	{
-		var entityController = Instantiate(Instance.UfoPrefab);
+		var prefab = Instantiate(Instance.UfoPrefab);
+		var entityController = prefab.GetComponent<UfoController>();
 		entityController.name = $"Ufo - {ufo.EntityId}";
 		entityController.Spawn(ufo, owner);
 		owner.OnUfoSpawned(entityController);
@@ -27,7 +28,8 @@ public class PrefabManager : MonoBehaviour
 
 	public static CowController SpawnCow(Cow cow)
 	{
-		var entityController = Instantiate(Instance.CowPrefab);
+		var prefab = Instantiate(Instance.CowPrefab);
+		var entityController = prefab.GetComponent<CowController>();
 		entityController.name = $"Cow - {cow.EntityId}";
 		entityController.Spawn(cow);
 		return entityController;

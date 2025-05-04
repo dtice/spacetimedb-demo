@@ -110,7 +110,6 @@ public class GameManager : MonoBehaviour
         {
             return;
         }
-        Debug.Log("Entity Updated: " + newEntity.EntityId);
         entityController.OnEntityUpdated(newEntity);
     }
 
@@ -125,13 +124,15 @@ public class GameManager : MonoBehaviour
     private static void CowOnInsert(EventContext context, Cow insertedValue)
     {
         var entityController = PrefabManager.SpawnCow(insertedValue);
+        Debug.Log("ADDING COW: " + entityController.name);
         Entities.Add(insertedValue.EntityId, entityController);
+        Debug.Log("ID: " + Entities[insertedValue.EntityId].EntityId);
     }
 
     private static void CowOnUpdate(EventContext context, Cow oldCow, Cow newCow)
     {
         var entityController = Entities[oldCow.EntityId];
-        (entityController as CowController).OnCowUpdated(context, oldCow, newCow);
+        (entityController as CowController)?.OnCowUpdated(context, oldCow, newCow);
     }
 
     private static void PlayerOnInsert(EventContext context, Player insertedPlayer)

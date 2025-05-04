@@ -1,10 +1,9 @@
 using SpacetimeDB.Types;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class CowController : EntityController
 {
-
+    public Vector3 direction = Vector3.back;
     public static Color[] ColorPalette = new[]
     {
         (Color)new Color32(119, 252, 173, 255),
@@ -18,14 +17,24 @@ public class CowController : EntityController
     public void Spawn(Cow cow)
     {
         base.Spawn(cow.EntityId);
-        SetColor(ColorPalette[EntityId % ColorPalette.Length]);
-        // IDK WHAT IM DOING
+        // SetColor(ColorPalette[EntityId % ColorPalette.Length]);
     }
 
     public void OnCowUpdated(EventContext context, Cow oldCow, Cow newCow)
     {
-        Debug.Log("Cow Updated: " + newCow.EntityId);
-        Vector3 direction = new Vector3(newCow.Direction.X, transform.position.y, newCow.Direction.Z);
-        transform.LookAt(direction);
+        direction = new Vector3(
+            newCow.Direction.X * 100,
+            0,
+            newCow.Direction.Z * 100
+        );
+        
+        // Debug.Log("Looking at: " + direction);
+        GetComponentInParent<Transform>().LookAt(direction);
+    }
+
+    public void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(transform.position, direction);
     }
 }

@@ -32,9 +32,9 @@ public class UfoController : EntityController
     public void Spawn(Ufo ufo, PlayerController owner)
     {
         base.Spawn(ufo.EntityId);
-		SetColor(ColorPalette[ufo.PlayerId % ColorPalette.Length]);
+		// SetColor(ColorPalette[ufo.PlayerId % ColorPalette.Length]);
 
-        this.Owner = owner;
+        Owner = owner;
         GetComponentInChildren<TMPro.TextMeshPro>().text = owner.username;
     }
 
