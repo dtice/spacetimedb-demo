@@ -236,29 +236,56 @@ fn move_all_players(ctx: &ReducerContext) -> Result<(), String> {
 
 #[reducer]
 fn check_all_beams(ctx: &ReducerContext) -> Result<(), String> {
-    for ufo in ctx.db.ufo().iter() {
-        let ufo_entity = ctx.db.entity().entity_id().find(&ufo.entity_id).unwrap();
-        if ufo.beam_on {
-            for mut cow in ctx.db.cow().iter() {
-                // If a cow is directly below ufo, it gets abducted
-                let cow_entity = ctx.db.entity().entity_id().find(&cow.entity_id);
-                let mut cow_entity = cow_entity.unwrap();
-                let cow_pos = DbVector2 {
-                    x: cow_entity.position.x,
-                    y: cow_entity.position.z,
-                };
-                let ufo_pos = DbVector2 {
-                    x: ufo_entity.position.x,
-                    y: ufo_entity.position.z,
-                };
-                if is_cow_in_beam(cow_pos, ufo_pos) {
-                    cow_entity.position.y = ufo_entity.position.y;
-                    cow.is_being_abducted = true;
-                    ctx.db.cow().entity_id().update(cow);
-                    ctx.db.entity().entity_id().update(cow_entity);
+    for mut ufo in ctx.db.ufo().iter() {
+        match ctx.db.entity().entity_id().find(&ufo.entity_id) {
+            None => {}
+            Some(ufo_entity) => {
+                if ufo.beam_on {
+                    for mut cow in ctx.db.cow().iter() {
+                        // If a cow is directly below ufo, it gets abducted
+                        match ctx.db.entity().entity_id().find(&cow.entity_id) {
+                            None => {}
+                            Some(mut cow_entity) => {
+                                let cow_pos = DbVector2 {
+                                    x: cow_entity.position.x,
+                                    y: cow_entity.position.z,
+                                };
+                                let ufo_pos = DbVector2 {
+                                    x: ufo_entity.position.x,
+                                    y: ufo_entity.position.z,
+                                };
+                                if is_cow_in_beam(cow_pos, ufo_pos) {
+                                    cow_entity.position.x = ufo_pos.x;
+                                    cow_entity.position.z = ufo_pos.y;
+                                    let new_cow_entity = cow_entity.clone();
+                                    cow.is_being_abducted = true;
+                                    cow.abducted_by = ctx.db.entity().entity_id().find(&ufo.entity_id);
+                                    ctx.db.cow().entity_id().update(cow);
+                                    ctx.db.entity().entity_id().update(new_cow_entity);
+                                    ufo.abducted_entity = Option::from(cow_entity);
+                                }
+                            }
+                        }
+                    }
+                    ctx.db.ufo().entity_id().update(ufo);
+                } else {
+                    for cow in ctx.db.cow().iter() {
+                        let mut new_cow = cow;
+                        match new_cow.abducted_by {
+                            None => {}
+                            Some(it) => {
+                                if it.entity_id == ufo_entity.entity_id {
+                                    new_cow.is_being_abducted = false;
+                                    new_cow.abducted_by = None;
+                                    ctx.db.cow().entity_id().update(new_cow);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
+        
     }
     Ok(())
 }
@@ -267,25 +294,32 @@ fn check_all_beams(ctx: &ReducerContext) -> Result<(), String> {
 fn process_abductions(ctx: &ReducerContext) -> Result<(), String> {
     for cow in ctx.db.cow().iter() {
         if cow.is_being_abducted && cow.abducted_by.is_some() {
-            let mut cow_entity = ctx.db.entity().entity_id().find(&cow.entity_id).unwrap();
-            match cow.abducted_by {
+            match ctx.db.entity().entity_id().find(&cow.entity_id) {
                 None => {
-                    cow_entity.position.y = 0.125;
                 }
-                Some(ufo) => {
-                    if cow_entity.position.y >= ufo.position.y {
-                        ctx.db.entity().delete(cow_entity);
-                        continue;
-                    }
+                Some(mut cow_entity) => {
+                    match cow.abducted_by {
+                        None => {
+                            cow_entity.position.y = 0.125f32;
+                        }
+                        Some(ufo) => {
+                            log::info!("Cow is being abducted by UFO, height = {}", cow_entity.position.y);
+                            if cow_entity.position.y >= ufo.position.y {
+                                let mut ufo = ctx.db.ufo().entity_id().find(&ufo.entity_id).unwrap();
+                                ufo.abducting = false;
+                                ctx.db.entity().entity_id().delete(&cow_entity.entity_id);
+                                continue;
+                            }
+                            cow_entity.position = DbVector3 {
+                                x: ufo.position.x,
+                                y: cow_entity.position.y + 0.02,
+                                z: ufo.position.z
+                            };
+                            ctx.db.entity().entity_id().update(cow_entity);
+                        }
+                    };
                 }
-            };
-            
-            cow_entity.position = DbVector3 {
-                x: cow_entity.position.x,
-                y: cow_entity.position.y + 0.02,
-                z: cow_entity.position.z
-            };
-            ctx.db.entity().entity_id().update(cow_entity);
+            }
         }
     }
     Ok(())

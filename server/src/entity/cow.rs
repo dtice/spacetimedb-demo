@@ -124,7 +124,7 @@ pub fn spawn_cow(ctx: &ReducerContext, world_size: u64) -> Result<(), String> {
     let cow_size = mass_to_cow_size(cow_mass);
 
     let x = rng.gen_range(cow_size..world_size as f32 - cow_size);
-    let y: f32 = 0.125;
+    let y: f32 = 0.125f32;
     let z = rng.gen_range(cow_size..world_size as f32 - cow_size);
     let entity = ctx.db.entity().try_insert(Entity {
         entity_id: 0,
