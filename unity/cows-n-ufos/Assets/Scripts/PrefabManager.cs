@@ -9,7 +9,7 @@ public class PrefabManager : MonoBehaviour
 
 	public GameObject UfoPrefab;
 	public GameObject CowPrefab;
-	public PlayerController PlayerPrefab;
+	public GameObject PlayerPrefab;
 
 	private void Awake()
 	{
@@ -37,7 +37,8 @@ public class PrefabManager : MonoBehaviour
 
 	public static PlayerController SpawnPlayer(Player player)
 	{
-		var playerController = Instantiate(Instance.PlayerPrefab);
+		var prefab = Instantiate(Instance.PlayerPrefab);
+		var playerController = prefab.GetComponent<PlayerController>();
 		playerController.name = $"PlayerController - {player.Name}";
 		playerController.Initialize(player);
 		return playerController;

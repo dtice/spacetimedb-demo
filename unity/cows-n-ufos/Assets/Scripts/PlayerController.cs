@@ -3,13 +3,14 @@ using System.Linq;
 using SpacetimeDB;
 using SpacetimeDB.Types;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour
 {
     private const int SEND_UPDATES_PER_SEC = 20;
     private const float SEND_UPDATES_FREQUENCY = 1f / SEND_UPDATES_PER_SEC;
 
-    public static PlayerController local { get; private set; }
+    public static PlayerController Instance { get; private set; }
 
     public uint playerId;
     private float lastMovementSendTimestamp;
@@ -18,15 +19,23 @@ public class PlayerController : MonoBehaviour
 
     public string username => GameManager.Conn.Db.Player.PlayerId.Find(playerId)?.Name;
     public int numberOfOwnedUfos => ownedUfos.Count;
-    public bool isLocalPlayer => this == local;
+    public bool isLocalPlayer => this == Instance;
+
+    private InputAction moveAction;
+    private InputAction abductAction;
 
     public void Initialize(Player player)
     {
         playerId = player.PlayerId;
         if (player.Identity == GameManager.LocalIdentity)
         {
-            local = this;
+            Instance = this;
         }
+
+        moveAction = InputSystem.actions.FindAction("Move");
+        abductAction = InputSystem.actions.FindAction("Abduct");
+        moveAction.Enable();
+        abductAction.Enable();
     }
 
     public void Update()
@@ -48,24 +57,13 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        // Throttled input requests
-        if (Time.time - lastMovementSendTimestamp >= SEND_UPDATES_FREQUENCY)
-        {
-            lastMovementSendTimestamp = Time.time;
-
-            var mousePosition = lockInputPosition ?? (Vector2)Input.mousePosition;
-            var screenSize = new Vector2
-            {
-                x = Screen.width,
-                y = Screen.height,
-            };
-            var centerOfScreen = screenSize / 2;
-
-            var direction = (mousePosition - centerOfScreen) / (screenSize.y / 3);
-            if (testInputEnabled) { direction = testInput; }
-            GameManager.Conn.Reducers.UpdatePlayerInput(new Vector2(0.0f, 0.0f));
-            // GameManager.Conn.Reducers.UpdatePlayerInput(direction);
-        }
+        
+        
+        // Movement
+        if (!(Time.time - lastMovementSendTimestamp >= SEND_UPDATES_FREQUENCY)) return;
+        
+        var moveValue = moveAction.ReadValue<Vector2>();
+        GameManager.Conn.Reducers.UpdatePlayerInput(moveValue);
     }
 
     private void OnDestroy()

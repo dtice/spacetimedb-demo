@@ -1,9 +1,11 @@
+using JetBrains.Annotations;
 using SpacetimeDB.Types;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class CowController : EntityController
 {
-    public Vector3 direction = Vector3.back;
+    private Vector3 direction = Vector3.back;
     public static Color[] ColorPalette = new[]
     {
         (Color)new Color32(119, 252, 173, 255),
@@ -27,8 +29,6 @@ public class CowController : EntityController
             0,
             newCow.Direction.Z * 100
         );
-        
-        // Debug.Log("Looking at: " + direction);
         GetComponentInParent<Transform>().LookAt(direction);
     }
 

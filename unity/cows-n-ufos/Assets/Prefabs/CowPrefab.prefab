@@ -10,15 +10,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: f3d45199f51cca642aea08cb7b5cb35e, type: 3}
       propertyPath: m_LocalScale.x
-      value: 25
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f3d45199f51cca642aea08cb7b5cb35e, type: 3}
       propertyPath: m_LocalScale.y
-      value: 25
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f3d45199f51cca642aea08cb7b5cb35e, type: 3}
       propertyPath: m_LocalScale.z
-      value: 25
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f3d45199f51cca642aea08cb7b5cb35e, type: 3}
       propertyPath: m_LocalPosition.x
@@ -99,7 +99,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   EntityId: 0
-  direction: {x: 0, y: 0, z: -1}
 --- !u!4 &3341286478015589719 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: f3d45199f51cca642aea08cb7b5cb35e, type: 3}

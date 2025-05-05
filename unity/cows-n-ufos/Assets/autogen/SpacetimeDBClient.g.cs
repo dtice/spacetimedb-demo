@@ -27,9 +27,9 @@ namespace SpacetimeDB.Types
             AddTable(LoggedOutPlayer = new(conn));
             AddTable(Message = new(conn));
             AddTable(MoveAllCowsTimer = new(conn));
-            AddTable(MoveAllPlayersTimer = new(conn));
             AddTable(Player = new(conn));
-            AddTable(SpawnCowTimer = new(conn));
+            AddTable(ProcessGameTimer = new(conn));
+            AddTable(SpawnCowsTimer = new(conn));
             AddTable(Ufo = new(conn));
         }
     }
@@ -440,14 +440,18 @@ namespace SpacetimeDB.Types
             return update.ReducerCall.ReducerName switch
             {
                 "change_cow_directions" => BSATNHelpers.Decode<Reducer.ChangeCowDirections>(encodedArgs),
+                "check_all_beams" => BSATNHelpers.Decode<Reducer.CheckAllBeams>(encodedArgs),
                 "connect" => BSATNHelpers.Decode<Reducer.Connect>(encodedArgs),
                 "disconnect" => BSATNHelpers.Decode<Reducer.Disconnect>(encodedArgs),
                 "enter_game" => BSATNHelpers.Decode<Reducer.EnterGame>(encodedArgs),
                 "move_all_cows" => BSATNHelpers.Decode<Reducer.MoveAllCows>(encodedArgs),
                 "move_all_players" => BSATNHelpers.Decode<Reducer.MoveAllPlayers>(encodedArgs),
+                "process_abductions" => BSATNHelpers.Decode<Reducer.ProcessAbductions>(encodedArgs),
+                "process_game" => BSATNHelpers.Decode<Reducer.ProcessGame>(encodedArgs),
                 "send_message" => BSATNHelpers.Decode<Reducer.SendMessage>(encodedArgs),
                 "set_name" => BSATNHelpers.Decode<Reducer.SetName>(encodedArgs),
-                "spawn_cow" => BSATNHelpers.Decode<Reducer.SpawnCow>(encodedArgs),
+                "spawn_cows" => BSATNHelpers.Decode<Reducer.SpawnCows>(encodedArgs),
+                "update_player_beam" => BSATNHelpers.Decode<Reducer.UpdatePlayerBeam>(encodedArgs),
                 "update_player_input" => BSATNHelpers.Decode<Reducer.UpdatePlayerInput>(encodedArgs),
                 var reducer => throw new ArgumentOutOfRangeException("Reducer", $"Unknown reducer {reducer}")
             };
@@ -471,14 +475,18 @@ namespace SpacetimeDB.Types
             return reducer switch
             {
                 Reducer.ChangeCowDirections args => Reducers.InvokeChangeCowDirections(eventContext, args),
+                Reducer.CheckAllBeams args => Reducers.InvokeCheckAllBeams(eventContext, args),
                 Reducer.Connect args => Reducers.InvokeConnect(eventContext, args),
                 Reducer.Disconnect args => Reducers.InvokeDisconnect(eventContext, args),
                 Reducer.EnterGame args => Reducers.InvokeEnterGame(eventContext, args),
                 Reducer.MoveAllCows args => Reducers.InvokeMoveAllCows(eventContext, args),
                 Reducer.MoveAllPlayers args => Reducers.InvokeMoveAllPlayers(eventContext, args),
+                Reducer.ProcessAbductions args => Reducers.InvokeProcessAbductions(eventContext, args),
+                Reducer.ProcessGame args => Reducers.InvokeProcessGame(eventContext, args),
                 Reducer.SendMessage args => Reducers.InvokeSendMessage(eventContext, args),
                 Reducer.SetName args => Reducers.InvokeSetName(eventContext, args),
-                Reducer.SpawnCow args => Reducers.InvokeSpawnCow(eventContext, args),
+                Reducer.SpawnCows args => Reducers.InvokeSpawnCows(eventContext, args),
+                Reducer.UpdatePlayerBeam args => Reducers.InvokeUpdatePlayerBeam(eventContext, args),
                 Reducer.UpdatePlayerInput args => Reducers.InvokeUpdatePlayerInput(eventContext, args),
                 _ => throw new ArgumentOutOfRangeException("Reducer", $"Unknown reducer {reducer}")
             };

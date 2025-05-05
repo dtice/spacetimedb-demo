@@ -3,6 +3,7 @@ use crate::{
     entity::ufo::ufo,
     util::math::{DbVector2, DbVector3}
 };
+use crate::entity::cow::cow;
 
 #[table(name = player, public)]
 #[table(name = logged_out_player)]
@@ -32,6 +33,45 @@ pub fn update_player_input(ctx: &ReducerContext, direction: DbVector2) -> Result
             z: norm.y
         };
         ufo.speed = direction.magnitude().clamp(0.0, 1.0);
+        ctx.db.ufo().entity_id().update(ufo);
+    }
+    Ok(())
+}
+
+#[reducer]
+pub fn update_player_beam(ctx: &ReducerContext, beam_on: bool) -> Result<(), String> {
+    let player = ctx
+        .db
+        .player()
+        .identity()
+        .find(&ctx.sender)
+        .ok_or("Player not found")?;
+    for mut ufo in ctx.db.ufo().player_id().filter(&player.player_id) {
+        ufo.beam_on = beam_on;
+        if !ufo.beam_on {
+            match ufo.abducted_entity {
+                None => {}
+                Some(entity) => {
+                    let mut cow = ctx.db.cow().entity_id().find(entity.entity_id).unwrap();
+                    cow.abducted_by = None;
+                }
+            }
+            ufo.abducted_entity = None;
+        }
+        ctx.db.ufo().entity_id().update(ufo);
+    }
+    Ok(())
+}
+
+pub fn update_player_abducting(ctx: &ReducerContext, abducting: bool) -> Result<(), String> {
+    let player = ctx
+        .db
+        .player()
+        .identity()
+        .find(&ctx.sender)
+        .ok_or("Player not found")?;
+    for mut ufo in ctx.db.ufo().player_id().filter(&player.player_id) {
+        ufo.abducting = abducting;
         ctx.db.ufo().entity_id().update(ufo);
     }
     Ok(())

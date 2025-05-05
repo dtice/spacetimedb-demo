@@ -9,7 +9,7 @@ use crate::{
     util::util::mass_to_max_move_speed,
     entity::entity::{Entity, entity},
     entity::cow::{
-        spawn_cow_timer, SpawnCowTimer,
+        spawn_cows_timer, SpawnCowsTimer,
         move_all_cows_timer, MoveAllCowsTimer,
         change_cow_direction_timer, ChangeCowDirectionTimer,
         mass_to_cow_size,
@@ -17,6 +17,10 @@ use crate::{
     entity::ufo::{ufo, Ufo},
     system::player::{Player, player, validate_name, validate_message},
 };
+use crate::entity::cow::cow;
+use crate::util::constants::START_PLAYER_HEIGHT;
+use crate::util::math::DbVector2;
+use crate::util::util::is_cow_in_beam;
 
 #[table(name = config, public)]
 pub struct Config {
@@ -33,8 +37,8 @@ pub struct Message {
 }
 
 // Timers
-#[table(name = move_all_players_timer, scheduled(move_all_players))]
-pub struct MoveAllPlayersTimer {
+#[table(name = process_game_timer, scheduled(process_game))]
+pub struct ProcessGameTimer {
     #[primary_key]
     #[auto_inc]
     pub scheduled_id: u64,
@@ -50,13 +54,13 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
         world_size: 10,
     })?;
     ctx.db
-        .spawn_cow_timer().try_insert(SpawnCowTimer {
+        .spawn_cows_timer().try_insert(SpawnCowsTimer {
         scheduled_id: 0,
         scheduled_at: ScheduleAt::Interval(Duration::from_millis(500).into()),
     })?;
     ctx.db
-        .move_all_players_timer()
-        .try_insert(MoveAllPlayersTimer {
+        .process_game_timer()
+        .try_insert(ProcessGameTimer {
             scheduled_id: 0,
             scheduled_at: ScheduleAt::Interval(Duration::from_millis(50).into()),
         })?;
@@ -73,6 +77,14 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
             scheduled_at: ScheduleAt::Interval(Duration::from_millis(50).into()),
         })?;
 
+    Ok(())
+}
+
+#[reducer]
+pub fn process_game(ctx: &ReducerContext, _process_game_timer: ProcessGameTimer) -> Result<(), String> {
+    move_all_players(ctx).expect("TODO: panic message");
+    check_all_beams(ctx).expect("TODO: panic message");
+    process_abductions(ctx).expect("TODO: panic message");
     Ok(())
 }
 
@@ -145,7 +157,7 @@ fn spawn_player(ctx: &ReducerContext, player_id: u32) -> Result<(), String> {
         .world_size;
     let mut rng = ctx.rng();
     let x = rng.gen_range(0.0..world_size as f32);
-    let y: f32 = 0.125f32;
+    let y: f32 = START_PLAYER_HEIGHT;
     let z = rng.gen_range(0.0..world_size as f32);
     spawn_player_at(
         ctx,
@@ -180,13 +192,16 @@ fn spawn_player_at(
         },
         speed: 0.0,
         last_split_time: timestamp,
+        beam_on: false,
+        abducting: false,
+        abducted_entity: None
     })?;
 
     Ok(entity)
 }
 
 #[reducer]
-pub fn move_all_players(ctx: &ReducerContext, _timer: MoveAllPlayersTimer) -> Result<(), String> {
+fn move_all_players(ctx: &ReducerContext) -> Result<(), String> {
     let world_size = ctx
         .db
         .config()
@@ -197,11 +212,13 @@ pub fn move_all_players(ctx: &ReducerContext, _timer: MoveAllPlayersTimer) -> Re
 
     // Handle player input
     for ufo in ctx.db.ufo().iter() {
+        // If a UFO is abducting an enemy, can't move
+        if ufo.beam_on && ufo.abducting { continue; }
+        
         let ufo_entity = ctx.db.entity().entity_id().find(&ufo.entity_id);
-        if !ufo_entity.is_some() {
-            // This can happen if a circle is eaten by another circle
-            continue;
-        }
+        // This can happen if a circle is eaten by another circle
+        if !ufo_entity.is_some() { continue; }
+        
         let mut ufo_entity = ufo_entity.unwrap();
         let ufo_size = mass_to_cow_size(ufo_entity.mass);
         let direction = ufo.direction * ufo.speed / 60.0;
@@ -214,5 +231,62 @@ pub fn move_all_players(ctx: &ReducerContext, _timer: MoveAllPlayersTimer) -> Re
         ctx.db.entity().entity_id().update(ufo_entity);
     }
 
+    Ok(())
+}
+
+#[reducer]
+fn check_all_beams(ctx: &ReducerContext) -> Result<(), String> {
+    for ufo in ctx.db.ufo().iter() {
+        let ufo_entity = ctx.db.entity().entity_id().find(&ufo.entity_id).unwrap();
+        if ufo.beam_on {
+            for mut cow in ctx.db.cow().iter() {
+                // If a cow is directly below ufo, it gets abducted
+                let cow_entity = ctx.db.entity().entity_id().find(&cow.entity_id);
+                let mut cow_entity = cow_entity.unwrap();
+                let cow_pos = DbVector2 {
+                    x: cow_entity.position.x,
+                    y: cow_entity.position.z,
+                };
+                let ufo_pos = DbVector2 {
+                    x: ufo_entity.position.x,
+                    y: ufo_entity.position.z,
+                };
+                if is_cow_in_beam(cow_pos, ufo_pos) {
+                    cow_entity.position.y = ufo_entity.position.y;
+                    cow.is_being_abducted = true;
+                    ctx.db.cow().entity_id().update(cow);
+                    ctx.db.entity().entity_id().update(cow_entity);
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+#[reducer]
+fn process_abductions(ctx: &ReducerContext) -> Result<(), String> {
+    for cow in ctx.db.cow().iter() {
+        if cow.is_being_abducted && cow.abducted_by.is_some() {
+            let mut cow_entity = ctx.db.entity().entity_id().find(&cow.entity_id).unwrap();
+            match cow.abducted_by {
+                None => {
+                    cow_entity.position.y = 0.125;
+                }
+                Some(ufo) => {
+                    if cow_entity.position.y >= ufo.position.y {
+                        ctx.db.entity().delete(cow_entity);
+                        continue;
+                    }
+                }
+            };
+            
+            cow_entity.position = DbVector3 {
+                x: cow_entity.position.x,
+                y: cow_entity.position.y + 0.02,
+                z: cow_entity.position.z
+            };
+            ctx.db.entity().entity_id().update(cow_entity);
+        }
+    }
     Ok(())
 }

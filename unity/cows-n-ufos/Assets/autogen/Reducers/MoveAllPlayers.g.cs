@@ -12,20 +12,19 @@ namespace SpacetimeDB.Types
 {
     public sealed partial class RemoteReducers : RemoteBase
     {
-        public delegate void MoveAllPlayersHandler(ReducerEventContext ctx, MoveAllPlayersTimer timer);
+        public delegate void MoveAllPlayersHandler(ReducerEventContext ctx);
         public event MoveAllPlayersHandler? OnMoveAllPlayers;
 
-        public void MoveAllPlayers(MoveAllPlayersTimer timer)
+        public void MoveAllPlayers()
         {
-            conn.InternalCallReducer(new Reducer.MoveAllPlayers(timer), this.SetCallReducerFlags.MoveAllPlayersFlags);
+            conn.InternalCallReducer(new Reducer.MoveAllPlayers(), this.SetCallReducerFlags.MoveAllPlayersFlags);
         }
 
         public bool InvokeMoveAllPlayers(ReducerEventContext ctx, Reducer.MoveAllPlayers args)
         {
             if (OnMoveAllPlayers == null) return false;
             OnMoveAllPlayers(
-                ctx,
-                args.Timer
+                ctx
             );
             return true;
         }
@@ -37,19 +36,6 @@ namespace SpacetimeDB.Types
         [DataContract]
         public sealed partial class MoveAllPlayers : Reducer, IReducerArgs
         {
-            [DataMember(Name = "_timer")]
-            public MoveAllPlayersTimer Timer;
-
-            public MoveAllPlayers(MoveAllPlayersTimer Timer)
-            {
-                this.Timer = Timer;
-            }
-
-            public MoveAllPlayers()
-            {
-                this.Timer = new();
-            }
-
             string IReducerArgs.ReducerName => "move_all_players";
         }
     }

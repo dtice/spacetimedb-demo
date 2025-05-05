@@ -1,4 +1,5 @@
 use spacetimedb::Timestamp;
+use crate::entity::entity::Entity;
 use crate::util::math::DbVector3;
 
 #[spacetimedb::table(name = ufo, public)]
@@ -10,4 +11,7 @@ pub struct Ufo {
     pub direction: DbVector3,
     pub speed: f32,
     pub last_split_time: Timestamp,
+    pub beam_on: bool,
+    pub abducting: bool,
+    pub abducted_entity: Option<Entity>
 }

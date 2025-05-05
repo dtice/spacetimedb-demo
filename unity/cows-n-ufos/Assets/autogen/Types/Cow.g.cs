@@ -21,18 +21,22 @@ namespace SpacetimeDB.Types
         public float Speed;
         [DataMember(Name = "is_being_abducted")]
         public bool IsBeingAbducted;
+        [DataMember(Name = "abducted_by")]
+        public Entity? AbductedBy;
 
         public Cow(
             uint EntityId,
             DbVector3 Direction,
             float Speed,
-            bool IsBeingAbducted
+            bool IsBeingAbducted,
+            Entity? AbductedBy
         )
         {
             this.EntityId = EntityId;
             this.Direction = Direction;
             this.Speed = Speed;
             this.IsBeingAbducted = IsBeingAbducted;
+            this.AbductedBy = AbductedBy;
         }
 
         public Cow()

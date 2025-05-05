@@ -81,6 +81,7 @@ public class GameManager : MonoBehaviour
         LocalIdentity = identity;
 
         conn.Db.Ufo.OnInsert += UfoOnInsert;
+        conn.Db.Ufo.OnUpdate += UfoOnUpdate;
         conn.Db.Entity.OnUpdate += EntityOnUpdate;
         conn.Db.Entity.OnDelete += EntityOnDelete;
         conn.Db.Cow.OnInsert += CowOnInsert;
@@ -104,6 +105,12 @@ public class GameManager : MonoBehaviour
         Entities.Add(insertedValue.EntityId, entityController);
     }
 
+    private static void UfoOnUpdate(EventContext context, Ufo oldUfo, Ufo newUfo)
+    {
+        var ufoController = Entities[newUfo.EntityId];
+        (ufoController as UfoController)?.UfoUpdated(newUfo);
+    }
+
     private static void EntityOnUpdate(EventContext context, Entity oldEntity, Entity newEntity)
     {
         if (!Entities.TryGetValue(newEntity.EntityId, out var entityController))
@@ -115,8 +122,10 @@ public class GameManager : MonoBehaviour
 
     private static void EntityOnDelete(EventContext context, Entity oldEntity)
     {
+        Debug.Log("GameManager: EntityOnDelete");
         if (Entities.Remove(oldEntity.EntityId, out var entityController))
         {
+            Debug.Log("GameManager: Removed entity");
             entityController.OnDelete(context);
         }
     }

@@ -9,7 +9,7 @@ public class CameraController : MonoBehaviour
 	private void LateUpdate()
     {
         var arenaCenterTransform = new Vector3(WorldSize / 2, WorldSize / 2, -10.0f);
-        if (PlayerController.local == null || !GameManager.IsConnected())
+        if (PlayerController.Instance == null || !GameManager.IsConnected())
         {
             // Set the camera to be in middle of the arena if we are not connected or 
             // there is no local player
@@ -17,7 +17,7 @@ public class CameraController : MonoBehaviour
             return;
         }
 
-        var centerOfMass = PlayerController.local.CenterOfMass();
+        var centerOfMass = PlayerController.Instance.CenterOfMass();
         if (centerOfMass.HasValue)
         {
             // Set the camera to be the center of mass of the local player
@@ -39,7 +39,7 @@ public class CameraController : MonoBehaviour
             transform.position = arenaCenterTransform;
         }
 
-		float targetCameraSize = CalculateCameraSize(PlayerController.local);
+		float targetCameraSize = CalculateCameraSize(PlayerController.Instance);
 		Camera.main.orthographicSize = Mathf.Lerp(Camera.main.orthographicSize, targetCameraSize, Time.deltaTime * 2);
 	}
 

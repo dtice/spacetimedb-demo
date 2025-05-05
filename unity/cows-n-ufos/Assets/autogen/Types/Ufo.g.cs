@@ -23,13 +23,22 @@ namespace SpacetimeDB.Types
         public float Speed;
         [DataMember(Name = "last_split_time")]
         public SpacetimeDB.Timestamp LastSplitTime;
+        [DataMember(Name = "beam_on")]
+        public bool BeamOn;
+        [DataMember(Name = "abducting")]
+        public bool Abducting;
+        [DataMember(Name = "abducted_entity")]
+        public Entity? AbductedEntity;
 
         public Ufo(
             uint EntityId,
             uint PlayerId,
             DbVector3 Direction,
             float Speed,
-            SpacetimeDB.Timestamp LastSplitTime
+            SpacetimeDB.Timestamp LastSplitTime,
+            bool BeamOn,
+            bool Abducting,
+            Entity? AbductedEntity
         )
         {
             this.EntityId = EntityId;
@@ -37,6 +46,9 @@ namespace SpacetimeDB.Types
             this.Direction = Direction;
             this.Speed = Speed;
             this.LastSplitTime = LastSplitTime;
+            this.BeamOn = BeamOn;
+            this.Abducting = Abducting;
+            this.AbductedEntity = AbductedEntity;
         }
 
         public Ufo()
