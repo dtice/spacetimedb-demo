@@ -269,6 +269,7 @@ fn check_all_beams(ctx: &ReducerContext) -> Result<(), String> {
                     }
                     ctx.db.ufo().entity_id().update(ufo);
                 } else {
+                    // Release all cows this player is holding
                     for cow in ctx.db.cow().iter() {
                         let mut new_cow = cow;
                         match new_cow.abducted_by {
@@ -277,6 +278,13 @@ fn check_all_beams(ctx: &ReducerContext) -> Result<(), String> {
                                 if it.entity_id == ufo_entity.entity_id {
                                     new_cow.is_being_abducted = false;
                                     new_cow.abducted_by = None;
+                                    match ctx.db.entity().entity_id().find(&new_cow.entity_id) {
+                                        None => {}
+                                        Some(mut new_entity) => {
+                                            new_entity.position.y = 0.125f32;
+                                            ctx.db.entity().entity_id().update(new_entity);
+                                        }
+                                    }
                                     ctx.db.cow().entity_id().update(new_cow);
                                 }
                             }
