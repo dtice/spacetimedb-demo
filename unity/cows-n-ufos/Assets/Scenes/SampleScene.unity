@@ -180,7 +180,7 @@ Camera:
     height: 1
   near clip plane: 0.05
   far clip plane: 1000
-  field of view: 60
+  field of view: 100
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -622,7 +622,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   UfoPrefab: {fileID: 7742941256414894271, guid: 39f781be01786b544ac95683802fdb1b, type: 3}
   CowPrefab: {fileID: 2672168354069821421, guid: cc15eb515f6b0594a8d27a6054c30958, type: 3}
-  PlayerPrefab: {fileID: 0}
+  PlayerPrefab: {fileID: 4310550668318723282, guid: f848752b775bdfd47b368885fb076548, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

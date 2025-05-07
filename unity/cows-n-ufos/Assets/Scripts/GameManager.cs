@@ -107,17 +107,18 @@ public class GameManager : MonoBehaviour
 
     private static void UfoOnUpdate(EventContext context, Ufo oldUfo, Ufo newUfo)
     {
-        var ufoController = Entities[newUfo.EntityId];
-        (ufoController as UfoController)?.UfoUpdated(newUfo);
+        if (Entities.TryGetValue(newUfo.EntityId, out var entityController))
+        {
+            (entityController as UfoController)?.UfoUpdated(newUfo);
+        }
     }
 
     private static void EntityOnUpdate(EventContext context, Entity oldEntity, Entity newEntity)
     {
-        if (!Entities.TryGetValue(newEntity.EntityId, out var entityController))
+        if (Entities.TryGetValue(newEntity.EntityId, out var entityController))
         {
-            return;
+            entityController.OnEntityUpdated(newEntity);
         }
-        entityController.OnEntityUpdated(newEntity);
     }
 
     private static void EntityOnDelete(EventContext context, Entity oldEntity)
@@ -140,8 +141,10 @@ public class GameManager : MonoBehaviour
 
     private static void CowOnUpdate(EventContext context, Cow oldCow, Cow newCow)
     {
-        var entityController = Entities[oldCow.EntityId];
-        (entityController as CowController)?.OnCowUpdated(context, oldCow, newCow);
+        if (Entities.TryGetValue(newCow.EntityId, out var entityController))
+        {
+            (entityController as CowController)?.OnCowUpdated(context, oldCow, newCow);
+        }
     }
 
     private static void PlayerOnInsert(EventContext context, Player insertedPlayer)
