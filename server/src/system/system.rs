@@ -5,13 +5,14 @@ use spacetimedb::{table, Timestamp};
 use std::time::Duration;
 
 use crate::entity::cow::cow;
+use crate::entity::ufo::mass_to_ufo_size;
 use crate::util::constants::{START_PLAYER_HEIGHT, WORLD_SIZE};
 use crate::util::math::DbVector2;
 use crate::util::util::is_cow_in_beam;
 use crate::{
     entity::cow::{
-        change_cow_direction_timer, mass_to_cow_size, move_all_cows_timer, spawn_cows_timer,
-        ChangeCowDirectionTimer, MoveAllCowsTimer, SpawnCowsTimer,
+        change_cow_direction_timer, move_all_cows_timer, spawn_cows_timer, ChangeCowDirectionTimer,
+        MoveAllCowsTimer, SpawnCowsTimer,
     },
     entity::entity::{entity, Entity},
     entity::ufo::{ufo, Ufo},
@@ -214,7 +215,7 @@ fn move_all_players(ctx: &ReducerContext) -> Result<(), String> {
         }
 
         let mut ufo_entity = ufo_entity.unwrap();
-        let ufo_size = mass_to_cow_size(ufo_entity.mass);
+        let ufo_size = mass_to_ufo_size(ufo_entity.mass);
         let direction = ufo.direction * ufo.speed / 60.0;
         let new_pos = ufo_entity.position + direction * mass_to_max_move_speed(ufo_entity.mass);
         let min = ufo_size;
@@ -302,7 +303,7 @@ fn process_abductions(ctx: &ReducerContext) -> Result<(), String> {
                         None => {
                             cow_entity.position.y = 0.125f32;
                         }
-                        Some(ufo) => {
+                        Some(ref ufo) => {
                             log::info!(
                                 "Cow is being abducted by UFO, height = {}",
                                 cow_entity.position.y
@@ -322,9 +323,14 @@ fn process_abductions(ctx: &ReducerContext) -> Result<(), String> {
                                 // Add mass to ufo
                                 ufo_entity.mass += cow_entity.mass;
 
+                                // Update UFO and UFO entity
                                 ctx.db.ufo().entity_id().update(ufo);
                                 ctx.db.entity().entity_id().update(ufo_entity);
+
+                                // Delete cow and cow entity
+                                ctx.db.cow().delete(cow);
                                 ctx.db.entity().entity_id().delete(&cow_entity.entity_id);
+
                                 continue;
                             }
                             cow_entity.position = DbVector3 {
