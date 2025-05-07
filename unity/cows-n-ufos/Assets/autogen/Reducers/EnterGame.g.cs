@@ -22,7 +22,18 @@ namespace SpacetimeDB.Types
 
         public bool InvokeEnterGame(ReducerEventContext ctx, Reducer.EnterGame args)
         {
-            if (OnEnterGame == null) return false;
+            if (OnEnterGame == null)
+            {
+                if (InternalOnUnhandledReducerError != null)
+                {
+                    switch(ctx.Event.Status)
+                    {
+                        case Status.Failed(var reason): InternalOnUnhandledReducerError(ctx, new Exception(reason)); break;
+                        case Status.OutOfEnergy(var _): InternalOnUnhandledReducerError(ctx, new Exception("out of energy")); break;
+                    }
+                }
+                return false;
+            }
             OnEnterGame(
                 ctx,
                 args.Name

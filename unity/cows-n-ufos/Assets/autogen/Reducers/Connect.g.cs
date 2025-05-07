@@ -17,7 +17,18 @@ namespace SpacetimeDB.Types
 
         public bool InvokeConnect(ReducerEventContext ctx, Reducer.Connect args)
         {
-            if (OnConnect == null) return false;
+            if (OnConnect == null)
+            {
+                if (InternalOnUnhandledReducerError != null)
+                {
+                    switch(ctx.Event.Status)
+                    {
+                        case Status.Failed(var reason): InternalOnUnhandledReducerError(ctx, new Exception(reason)); break;
+                        case Status.OutOfEnergy(var _): InternalOnUnhandledReducerError(ctx, new Exception("out of energy")); break;
+                    }
+                }
+                return false;
+            }
             OnConnect(
                 ctx
             );

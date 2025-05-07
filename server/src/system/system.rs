@@ -1,26 +1,24 @@
-use spacetimedb::{table, Timestamp};
-use spacetimedb::Identity;
-use std::time::Duration;
-use spacetimedb::{reducer, ReducerContext, ScheduleAt, Table};
 use spacetimedb::rand::Rng;
+use spacetimedb::Identity;
+use spacetimedb::{reducer, ReducerContext, ScheduleAt, Table};
+use spacetimedb::{table, Timestamp};
+use std::time::Duration;
 
-use crate::{
-    util::math::DbVector3,
-    util::util::mass_to_max_move_speed,
-    entity::entity::{Entity, entity},
-    entity::cow::{
-        spawn_cows_timer, SpawnCowsTimer,
-        move_all_cows_timer, MoveAllCowsTimer,
-        change_cow_direction_timer, ChangeCowDirectionTimer,
-        mass_to_cow_size,
-    },
-    entity::ufo::{ufo, Ufo},
-    system::player::{Player, player, validate_name, validate_message},
-};
 use crate::entity::cow::cow;
 use crate::util::constants::START_PLAYER_HEIGHT;
 use crate::util::math::DbVector2;
 use crate::util::util::is_cow_in_beam;
+use crate::{
+    entity::cow::{
+        change_cow_direction_timer, mass_to_cow_size, move_all_cows_timer, spawn_cows_timer,
+        ChangeCowDirectionTimer, MoveAllCowsTimer, SpawnCowsTimer,
+    },
+    entity::entity::{entity, Entity},
+    entity::ufo::{ufo, Ufo},
+    system::player::{player, validate_message, validate_name, Player},
+    util::math::DbVector3,
+    util::util::mass_to_max_move_speed,
+};
 
 #[table(name = config, public)]
 pub struct Config {
@@ -42,7 +40,7 @@ pub struct ProcessGameTimer {
     #[primary_key]
     #[auto_inc]
     pub scheduled_id: u64,
-    pub scheduled_at: ScheduleAt
+    pub scheduled_at: ScheduleAt,
 }
 
 // Reducers
@@ -51,37 +49,35 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
     log::info!("Initializing...");
     ctx.db.config().try_insert(Config {
         id: 0,
-        world_size: 10,
+        world_size: 1000,
     })?;
-    ctx.db
-        .spawn_cows_timer().try_insert(SpawnCowsTimer {
+    ctx.db.spawn_cows_timer().try_insert(SpawnCowsTimer {
         scheduled_id: 0,
         scheduled_at: ScheduleAt::Interval(Duration::from_millis(500).into()),
     })?;
-    ctx.db
-        .process_game_timer()
-        .try_insert(ProcessGameTimer {
-            scheduled_id: 0,
-            scheduled_at: ScheduleAt::Interval(Duration::from_millis(50).into()),
-        })?;
+    ctx.db.process_game_timer().try_insert(ProcessGameTimer {
+        scheduled_id: 0,
+        scheduled_at: ScheduleAt::Interval(Duration::from_millis(50).into()),
+    })?;
     ctx.db
         .change_cow_direction_timer()
         .try_insert(ChangeCowDirectionTimer {
             scheduled_id: 0,
             scheduled_at: ScheduleAt::Interval(Duration::from_millis(1000).into()),
         })?;
-    ctx.db
-        .move_all_cows_timer()
-        .try_insert(MoveAllCowsTimer {
-            scheduled_id: 0,
-            scheduled_at: ScheduleAt::Interval(Duration::from_millis(50).into()),
-        })?;
+    ctx.db.move_all_cows_timer().try_insert(MoveAllCowsTimer {
+        scheduled_id: 0,
+        scheduled_at: ScheduleAt::Interval(Duration::from_millis(50).into()),
+    })?;
 
     Ok(())
 }
 
 #[reducer]
-pub fn process_game(ctx: &ReducerContext, _process_game_timer: ProcessGameTimer) -> Result<(), String> {
+pub fn process_game(
+    ctx: &ReducerContext,
+    _process_game_timer: ProcessGameTimer,
+) -> Result<(), String> {
     move_all_players(ctx).expect("TODO: panic message");
     check_all_beams(ctx).expect("TODO: panic message");
     process_abductions(ctx).expect("TODO: panic message");
@@ -159,13 +155,7 @@ fn spawn_player(ctx: &ReducerContext, player_id: u32) -> Result<(), String> {
     let x = rng.gen_range(0.0..world_size as f32);
     let y: f32 = START_PLAYER_HEIGHT;
     let z = rng.gen_range(0.0..world_size as f32);
-    spawn_player_at(
-        ctx,
-        player_id,
-        1,
-        DbVector3 { x, y, z },
-        ctx.timestamp,
-    )?;
+    spawn_player_at(ctx, player_id, 1, DbVector3 { x, y, z }, ctx.timestamp)?;
     Ok(())
 }
 
@@ -194,7 +184,7 @@ fn spawn_player_at(
         last_split_time: timestamp,
         beam_on: false,
         abducting: false,
-        abducted_entity: None
+        abducted_entity: None,
     })?;
 
     Ok(entity)
@@ -213,17 +203,20 @@ fn move_all_players(ctx: &ReducerContext) -> Result<(), String> {
     // Handle player input
     for ufo in ctx.db.ufo().iter() {
         // If a UFO is abducting an enemy, can't move
-        if ufo.beam_on && ufo.abducting { continue; }
-        
+        if ufo.beam_on && ufo.abducting {
+            continue;
+        }
+
         let ufo_entity = ctx.db.entity().entity_id().find(&ufo.entity_id);
         // This can happen if a circle is eaten by another circle
-        if !ufo_entity.is_some() { continue; }
-        
+        if !ufo_entity.is_some() {
+            continue;
+        }
+
         let mut ufo_entity = ufo_entity.unwrap();
         let ufo_size = mass_to_cow_size(ufo_entity.mass);
         let direction = ufo.direction * ufo.speed / 60.0;
-        let new_pos =
-            ufo_entity.position + direction * mass_to_max_move_speed(ufo_entity.mass);
+        let new_pos = ufo_entity.position + direction * mass_to_max_move_speed(ufo_entity.mass);
         let min = ufo_size;
         let max = world_size as f32 - ufo_size;
         ufo_entity.position.x = new_pos.x.clamp(min, max);
@@ -259,7 +252,8 @@ fn check_all_beams(ctx: &ReducerContext) -> Result<(), String> {
                                     cow_entity.position.z = ufo_pos.y;
                                     let new_cow_entity = cow_entity.clone();
                                     cow.is_being_abducted = true;
-                                    cow.abducted_by = ctx.db.entity().entity_id().find(&ufo.entity_id);
+                                    cow.abducted_by =
+                                        ctx.db.entity().entity_id().find(&ufo.entity_id);
                                     ctx.db.cow().entity_id().update(cow);
                                     ctx.db.entity().entity_id().update(new_cow_entity);
                                     ufo.abducted_entity = Option::from(cow_entity);
@@ -293,7 +287,6 @@ fn check_all_beams(ctx: &ReducerContext) -> Result<(), String> {
                 }
             }
         }
-        
     }
     Ok(())
 }
@@ -303,25 +296,41 @@ fn process_abductions(ctx: &ReducerContext) -> Result<(), String> {
     for cow in ctx.db.cow().iter() {
         if cow.is_being_abducted && cow.abducted_by.is_some() {
             match ctx.db.entity().entity_id().find(&cow.entity_id) {
-                None => {
-                }
+                None => {}
                 Some(mut cow_entity) => {
                     match cow.abducted_by {
                         None => {
                             cow_entity.position.y = 0.125f32;
                         }
                         Some(ufo) => {
-                            log::info!("Cow is being abducted by UFO, height = {}", cow_entity.position.y);
+                            log::info!(
+                                "Cow is being abducted by UFO, height = {}",
+                                cow_entity.position.y
+                            );
                             if cow_entity.position.y >= ufo.position.y {
-                                let mut ufo = ctx.db.ufo().entity_id().find(&ufo.entity_id).unwrap();
+                                // Update ufo and ufo entity
+                                let mut ufo =
+                                    ctx.db.ufo().entity_id().find(&ufo.entity_id).unwrap();
                                 ufo.abducting = false;
+                                let mut ufo_entity = ctx
+                                    .db
+                                    .entity()
+                                    .entity_id()
+                                    .find(&ufo.entity_id)
+                                    .ok_or("UFO entity not found")?;
+
+                                // Add mass to ufo
+                                ufo_entity.mass += cow_entity.mass;
+
+                                ctx.db.ufo().entity_id().update(ufo);
+                                ctx.db.entity().entity_id().update(ufo_entity);
                                 ctx.db.entity().entity_id().delete(&cow_entity.entity_id);
                                 continue;
                             }
                             cow_entity.position = DbVector3 {
                                 x: ufo.position.x,
                                 y: cow_entity.position.y + 0.02,
-                                z: ufo.position.z
+                                z: ufo.position.z,
                             };
                             ctx.db.entity().entity_id().update(cow_entity);
                         }
