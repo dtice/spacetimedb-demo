@@ -154,7 +154,7 @@ fn spawn_player(ctx: &ReducerContext, player_id: u32) -> Result<(), String> {
         .world_size;
     let mut rng = ctx.rng();
     let x = rng.gen_range(0.0..world_size as f32);
-    let y: f32 = START_PLAYER_HEIGHT;
+    let y: f32 = mass_to_ufo_size(1);
     let z = rng.gen_range(0.0..world_size as f32);
     spawn_player_at(ctx, player_id, 1, DbVector3 { x, y, z }, ctx.timestamp)?;
     Ok(())

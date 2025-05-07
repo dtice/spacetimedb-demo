@@ -28,27 +28,27 @@ public class UfoController : EntityController
 		(Color)new Color32(2, 28, 146, 255),
 	};
 
-    private PlayerController Owner;
-    
-    [SerializeField]
-    private MeshRenderer tractorBeam;
-    private InputAction abductAction;
+	private PlayerController Owner;
 
-    public void Spawn(Ufo ufo, PlayerController owner)
-    {
-        base.Spawn(ufo.EntityId);
+	[SerializeField]
+	private MeshRenderer tractorBeam;
+	private InputAction abductAction;
+
+	public void Spawn(Ufo ufo, PlayerController owner)
+	{
+		base.Spawn(ufo.EntityId);
 		// SetColor(ColorPalette[ufo.PlayerId % ColorPalette.Length]);
 
-        Owner = owner;
-        GetComponentInChildren<TMPro.TextMeshPro>().text = owner.username;
-        abductAction = InputSystem.actions.FindAction("Abduct");
-    }
+		Owner = owner;
+		GetComponentInChildren<TMPro.TextMeshPro>().text = owner.username;
+		abductAction = InputSystem.actions.FindAction("Abduct");
+	}
 
 	public override void OnDelete(EventContext context)
 	{
 		Debug.Log("UfoController: OnDelete");
 		base.OnDelete(context);
-        Owner.OnUfoDeleted(this);
+		Owner.OnUfoDeleted(this);
 	}
 
 	public void UfoUpdated(Ufo ufo)
@@ -81,6 +81,10 @@ public class UfoController : EntityController
 		{
 			// TODO: add network callback to show other players beams
 		}
+
+		var textTransform = GetComponentInChildren<TMPro.TextMeshPro>().transform;
+		textTransform.LookAt(Camera.main.transform.position);
+		textTransform.Rotate(0, 180, 0); // Flip the text to face the camera correctly
 	}
 
 	public void ShowTractorBeam()
