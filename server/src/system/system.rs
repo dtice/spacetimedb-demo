@@ -5,7 +5,7 @@ use spacetimedb::{table, Timestamp};
 use std::time::Duration;
 
 use crate::entity::cow::cow;
-use crate::util::constants::START_PLAYER_HEIGHT;
+use crate::util::constants::{START_PLAYER_HEIGHT, WORLD_SIZE};
 use crate::util::math::DbVector2;
 use crate::util::util::is_cow_in_beam;
 use crate::{
@@ -49,7 +49,7 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
     log::info!("Initializing...");
     ctx.db.config().try_insert(Config {
         id: 0,
-        world_size: 1000,
+        world_size: WORLD_SIZE,
     })?;
     ctx.db.spawn_cows_timer().try_insert(SpawnCowsTimer {
         scheduled_id: 0,
