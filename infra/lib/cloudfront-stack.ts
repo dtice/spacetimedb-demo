@@ -3,7 +3,7 @@ import { Construct } from 'constructs';
 import { Peer, Port, PrefixList } from 'aws-cdk-lib/aws-ec2';
 import { EC2Stack } from './ec2-stack';
 import { HttpOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
-import { AllowedMethods, CacheHeaderBehavior, CachePolicy, Distribution, OriginRequestPolicy, OriginSslPolicy, ViewerProtocolPolicy } from 'aws-cdk-lib/aws-cloudfront';
+import { AllowedMethods, CacheHeaderBehavior, CachePolicy, Distribution, OriginProtocolPolicy, OriginRequestPolicy, OriginSslPolicy, ViewerProtocolPolicy } from 'aws-cdk-lib/aws-cloudfront';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { BlockPublicAccess, Bucket, ObjectOwnership } from 'aws-cdk-lib/aws-s3';
 import { Effect, PolicyStatement, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
@@ -57,13 +57,13 @@ export class CloudFrontStack extends Stack {
                 origin: new HttpOrigin(
                     ec2Stack.instance.instancePublicDnsName,
                     {
-                        originSslProtocols: [OriginSslPolicy.TLS_V1_2],
+                        protocolPolicy: OriginProtocolPolicy.HTTP_ONLY,
                     }
                 ),
                 viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 allowedMethods: AllowedMethods.ALLOW_ALL,
                 cachePolicy: CachePolicy.CACHING_DISABLED,
-                originRequestPolicy: OriginRequestPolicy.ALL_VIEWER
+                originRequestPolicy: OriginRequestPolicy.ALL_VIEWER,
             },
             certificate,
             domainNames: ['spacetime.dilltice.com'],
