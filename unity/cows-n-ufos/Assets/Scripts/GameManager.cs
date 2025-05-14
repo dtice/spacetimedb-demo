@@ -7,7 +7,7 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    const string SERVER_URL = "127.0.0.1:3000";
+    const string SERVER_URL = "https://spacetime.dilltice.com";
     const string MODULE_NAME = "cows-n-ufos";
 
     public static event Action OnConnected;
