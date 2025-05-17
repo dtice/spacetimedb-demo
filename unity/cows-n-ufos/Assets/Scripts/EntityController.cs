@@ -45,7 +45,7 @@ public abstract class EntityController : MonoBehaviour
 	public virtual void OnDelete(EventContext context)
 	{
 		Debug.Log("EntityController: OnDelete");
-		Destroy(gameObject);
+		Destroy(transform.gameObject);
 	}
 
 	public virtual void Update()
