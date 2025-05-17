@@ -10,6 +10,8 @@ public class PlayerController : MonoBehaviour
     private const int SEND_UPDATES_PER_SEC = 20;
     private const float SEND_UPDATES_FREQUENCY = 1f / SEND_UPDATES_PER_SEC;
 
+    private GameObject menu;
+
     public static PlayerController Instance { get; private set; }
 
     public uint playerId;
@@ -40,13 +42,17 @@ public class PlayerController : MonoBehaviour
 
     public void Update()
     {
-        if (!isLocalPlayer || numberOfOwnedUfos == 0)
+        if (!isLocalPlayer || numberOfOwnedUfos == 0 || GameManager.LockPlayerInput) return;
+
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
-            return;
+            Debug.Log("Escape");
+            GameManager.Instance.ToggleMenu();
         }
 
         if (Input.GetKeyDown(KeyCode.Q))
         {
+            Debug.Log("Q pressed");
             if (lockInputPosition.HasValue)
             {
                 lockInputPosition = null;
@@ -56,8 +62,6 @@ public class PlayerController : MonoBehaviour
                 lockInputPosition = (Vector2)Input.mousePosition;
             }
         }
-
-
 
         // Movement
         if (!(Time.time - lastMovementSendTimestamp >= SEND_UPDATES_FREQUENCY)) return;
