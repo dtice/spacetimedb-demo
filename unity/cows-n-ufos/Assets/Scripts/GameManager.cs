@@ -10,6 +10,10 @@ public class GameManager : MonoBehaviour
     const string SERVER_URL = "http://localhost:3000";
     const string MODULE_NAME = "cows-n-ufos";
 
+    [SerializeField] private GameObject menu;
+    
+    public static Boolean LockPlayerInput = false;
+
     public static event Action OnConnected;
     public static event Action OnSubscriptionApplied;
 
@@ -27,6 +31,7 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         Instance = this;
+        menu.SetActive(LockPlayerInput);
         Application.targetFrameRate = 60;
 
         // In order to build a connection to SpacetimeDB we need to register
@@ -206,5 +211,11 @@ public class GameManager : MonoBehaviour
     {
         Conn.Disconnect();
         Conn = null;
+    }
+
+    public void ToggleMenu()
+    {
+        LockPlayerInput = !LockPlayerInput;
+        menu.SetActive(LockPlayerInput);
     }
 }
