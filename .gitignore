@@ -3,3 +3,4 @@ godot/
 unity/cows-n-ufos/Assets/autogen
 *.idea
 *.vs
+*.DS_Store

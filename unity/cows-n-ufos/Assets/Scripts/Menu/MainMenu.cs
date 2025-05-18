@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -13,6 +14,7 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private Button settingsButton;
     [SerializeField] private Button quitButton;
     [SerializeField] private Button backButton;
+    [SerializeField] private TMP_InputField nameField;
 
     [Header("Game Settings")]
     [SerializeField] private string gameSceneName = "GameScene";
@@ -22,6 +24,8 @@ public class MainMenu : MonoBehaviour
         // Ensure the main menu is visible and settings is hidden at start
         mainMenuPanel.SetActive(true);
         settingsPanel.SetActive(false);
+        nameField.text = PlayerPrefs.GetString("PlayerName");
+        nameField.onValueChanged.AddListener(OnTextChanged);
         
         // Add listeners to buttons
         playButton.onClick.AddListener(PlayGame);
@@ -57,5 +61,11 @@ public class MainMenu : MonoBehaviour
         #else
                 Application.Quit();
         #endif
+    }
+
+    private void OnTextChanged(string newText)
+    {
+        if (newText != "") PlayerPrefs.SetString("PlayerName", newText);
+        else  PlayerPrefs.DeleteKey("PlayerName");
     }
 }

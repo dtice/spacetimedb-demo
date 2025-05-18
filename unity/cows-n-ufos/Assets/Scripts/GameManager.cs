@@ -199,7 +199,7 @@ public class GameManager : MonoBehaviour
         var worldSize = Conn.Db.Config.Id.Find(0).WorldSize;
         SetupArena(worldSize);
 
-        ctx.Reducers.EnterGame("Alex");
+        ctx.Reducers.EnterGame(PlayerPrefs.GetString("PlayerName") ?? "Dingus");
     }
 
     public static bool IsConnected()
