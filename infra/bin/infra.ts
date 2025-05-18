@@ -3,6 +3,7 @@ import 'dotenv/config';
 import { App } from 'aws-cdk-lib';
 import { EC2Stack } from '../lib/ec2-stack';
 import { CloudFrontStack } from '../lib/cloudfront-stack';
+import { UnityStack } from '../lib/unity-stack';
 
 const app = new App();
 
@@ -19,7 +20,14 @@ const ec2StackProps = {
 };
 
 const cloudfrontStackProps = {
+  // Certificate for spacetime.dilltice.com
   certificateArn: 'arn:aws:acm:us-east-1:730335480069:certificate/e76b4f1c-2521-46fd-9bb6-e90741839def',
+}
+
+const unityStackProps = {
+  bucketName: 'cows-n-ufos-game-assets',
+  // Certificate for ufo.dilltice.com
+  certificateArn: 'arn:aws:acm:us-east-1:730335480069:certificate/4d30453e-4aae-4268-bb71-9333b55111f9',
 }
 
 const ec2Stack = new EC2Stack(app, 'EC2Stack', {
@@ -33,6 +41,9 @@ new CloudFrontStack(app, 'CloudFrontStack', ec2Stack, {
   env: devEnv,
   description: 'SpacetimeDB CloudFront Stack',
 });
+
+// Create resources to host game assets
+new UnityStack(app, 'UnityStack', unityStackProps);
 
 app.synth();
 
