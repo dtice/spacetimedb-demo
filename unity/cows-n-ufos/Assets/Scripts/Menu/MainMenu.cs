@@ -25,13 +25,14 @@ public class MainMenu : MonoBehaviour
         mainMenuPanel.SetActive(true);
         settingsPanel.SetActive(false);
         nameField.text = PlayerPrefs.GetString("PlayerName");
-        nameField.onValueChanged.AddListener(OnTextChanged);
-        
+        if (nameField.text == "")  playButton.interactable = false;
+
         // Add listeners to buttons
         playButton.onClick.AddListener(PlayGame);
         settingsButton.onClick.AddListener(OpenSettings);
         quitButton.onClick.AddListener(QuitGame);
         backButton.onClick.AddListener(BackToMainMenu);
+        nameField.onValueChanged.AddListener(OnTextChanged);
     }
 
     private void PlayGame()
@@ -65,7 +66,7 @@ public class MainMenu : MonoBehaviour
 
     private void OnTextChanged(string newText)
     {
-        if (newText != "") PlayerPrefs.SetString("PlayerName", newText);
-        else  PlayerPrefs.DeleteKey("PlayerName");
+        PlayerPrefs.SetString("PlayerName", newText);
+        playButton.interactable = newText != "";
     }
 }

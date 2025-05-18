@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using SpacetimeDB;
 using SpacetimeDB.Types;
@@ -7,7 +6,7 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    const string SERVER_URL = "http://localhost:3000";
+    const string SERVER_URL = "http://192.168.0.45:3000";
     const string MODULE_NAME = "cows-n-ufos";
 
     [SerializeField] private GameObject menu;
