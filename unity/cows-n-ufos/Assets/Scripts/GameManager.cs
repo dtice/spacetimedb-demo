@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    const string SERVER_URL = "http://192.168.0.45:3000";
+    const string SERVER_URL = "https://spacetime.dilltice.com";
     const string MODULE_NAME = "cows-n-ufos";
 
     [SerializeField] private GameObject menu;
@@ -40,13 +40,13 @@ public class GameManager : MonoBehaviour
             .OnConnectError(HandleConnectError)
             .OnDisconnect(HandleDisconnect)
             .WithUri(SERVER_URL)
-            .WithModuleName(MODULE_NAME);
+            .WithModuleName(MODULE_NAME)
+            .WithToken("MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEJ9A8jH8NEsGTXeayDm3xyY/vTHRu/5GuzM1OXo1larwXoojw1YKvoCXBOP8LHrBl0N5ZVozSjS9jPLcbGr27Hg==");
 
         // If the user has a SpacetimeDB auth token stored in the Unity PlayerPrefs,
         // we can use it to authenticate the connection.
         if (AuthToken.Token != "")
         {
-            builder = builder.WithToken(AuthToken.Token);
         }
 
         // Building the connection will establish a connection to the SpacetimeDB
