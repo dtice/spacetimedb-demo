@@ -53,12 +53,12 @@ public abstract class EntityController : MonoBehaviour
 		// Interpolate position and scale
 		LerpTime = Mathf.Min(LerpTime + Time.deltaTime, LERP_DURATION_SEC);
 		transform.position = Vector3.Lerp(LerpStartPosition, LerpTargetPosition, LerpTime / LERP_DURATION_SEC);
-		transform.localScale = Vector3.Lerp(transform.localScale, TargetScale, Time.deltaTime * 8);
+		transform.localScale = Vector3.Lerp(transform.localScale, TargetScale, LerpTime);
 	}
 
 	public static Vector3 MassToScale(uint mass)
 	{
-		var diameter = MassToDiameter(mass);
+		var diameter = mass * 1.01f;
 		return new Vector3(diameter, diameter, diameter);
 	}
 

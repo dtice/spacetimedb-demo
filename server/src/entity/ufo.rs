@@ -17,5 +17,5 @@ pub struct Ufo {
 }
 
 pub fn mass_to_ufo_size(mass: u32) -> f32 {
-    mass as f32 * 0.25f32
+    mass as f32 * 0.01f32
 }

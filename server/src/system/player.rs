@@ -49,11 +49,11 @@ pub fn update_player_beam(ctx: &ReducerContext, beam_on: bool) -> Result<(), Str
     for mut ufo in ctx.db.ufo().player_id().filter(&player.player_id) {
         ufo.beam_on = beam_on;
         if !ufo.beam_on {
-            match ufo.abducted_entity {
-                None => {}
-                Some(entity) => {
-                    let mut cow = ctx.db.cow().entity_id().find(entity.entity_id).unwrap();
+            if let Some(entity) = ufo.abducted_entity {
+                if let Some(mut cow) = ctx.db.cow().entity_id().find(entity.entity_id) {
+                    cow.is_being_abducted = false;
                     cow.abducted_by = None;
+                    ctx.db.cow().entity_id().update(cow);
                 }
             }
             ufo.abducted_entity = None;
