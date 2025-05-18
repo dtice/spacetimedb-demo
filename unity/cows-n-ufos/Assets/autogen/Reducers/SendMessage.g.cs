@@ -22,18 +22,7 @@ namespace SpacetimeDB.Types
 
         public bool InvokeSendMessage(ReducerEventContext ctx, Reducer.SendMessage args)
         {
-            if (OnSendMessage == null)
-            {
-                if (InternalOnUnhandledReducerError != null)
-                {
-                    switch(ctx.Event.Status)
-                    {
-                        case Status.Failed(var reason): InternalOnUnhandledReducerError(ctx, new Exception(reason)); break;
-                        case Status.OutOfEnergy(var _): InternalOnUnhandledReducerError(ctx, new Exception("out of energy")); break;
-                    }
-                }
-                return false;
-            }
+            if (OnSendMessage == null) return false;
             OnSendMessage(
                 ctx,
                 args.Text

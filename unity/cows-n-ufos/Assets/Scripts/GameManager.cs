@@ -40,8 +40,7 @@ public class GameManager : MonoBehaviour
             .OnConnectError(HandleConnectError)
             .OnDisconnect(HandleDisconnect)
             .WithUri(SERVER_URL)
-            .WithModuleName(MODULE_NAME)
-            .WithToken("MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEJ9A8jH8NEsGTXeayDm3xyY/vTHRu/5GuzM1OXo1larwXoojw1YKvoCXBOP8LHrBl0N5ZVozSjS9jPLcbGr27Hg==");
+            .WithModuleName(MODULE_NAME);
 
         // If the user has a SpacetimeDB auth token stored in the Unity PlayerPrefs,
         // we can use it to authenticate the connection.
