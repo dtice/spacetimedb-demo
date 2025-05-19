@@ -28,6 +28,9 @@ const unityStackProps = {
   bucketName: 'cows-n-ufos-game-assets',
   // Certificate for ufo.dilltice.com
   certificateArn: 'arn:aws:acm:us-east-1:730335480069:certificate/4d30453e-4aae-4268-bb71-9333b55111f9',
+  env: {
+    region: 'us-east-1',
+  }
 }
 
 const ec2Stack = new EC2Stack(app, 'EC2Stack', {

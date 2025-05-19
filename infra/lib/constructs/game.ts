@@ -3,17 +3,17 @@ import { BlockPublicAccess, Bucket, BucketEncryption, HttpMethods } from 'aws-cd
 import { RemovalPolicy, Duration } from 'aws-cdk-lib';
 import {
     Distribution,
-    OriginRequestPolicy,
     CachePolicy,
     ViewerProtocolPolicy,
     ResponseHeadersPolicy,
     AllowedMethods,
-    ResponseHeadersPolicyProps,
-    HeadersFrameOption,
-    HeadersReferrerPolicy,
+    OriginAccessIdentity,
+    LambdaEdgeEventType,
 } from 'aws-cdk-lib/aws-cloudfront';
-import { S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
+import { S3BucketOrigin, S3StaticWebsiteOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
+import { Code, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { experimental } from 'aws-cdk-lib/aws-cloudfront';
 
 export interface GameBucketProps {
     bucketName: string;
@@ -41,9 +41,15 @@ export class GameResources extends Construct {
                     allowedHeaders: ['*'],
                 },
             ],
-            blockPublicAccess: BlockPublicAccess.BLOCK_ACLS, // Block ACLs, but allow access via CloudFront
+            blockPublicAccess: BlockPublicAccess.BLOCK_ALL, // Block all public access
             publicReadAccess: false, // Only CloudFront can access
         });
+
+        const originAccessIdentity = new OriginAccessIdentity(this, 'OriginAccessIdentity', {
+            comment: `Access Identity for ${props.bucketName}`,
+        });
+
+        this.bucket.grantRead(originAccessIdentity);
 
         const origin = S3BucketOrigin.withOriginAccessControl(this.bucket);
 
@@ -73,6 +79,23 @@ export class GameResources extends Construct {
 
         const certificate = Certificate.fromCertificateArn(this, 'Certificate', props.certificateArn);
 
+        const edgeFunction = new experimental.EdgeFunction(this, 'AddBrotliHeaderFunction', {
+            runtime: Runtime.NODEJS_18_X,
+            handler: 'index.handler',
+            code: Code.fromInline(`
+            exports.handler = async (event) => {
+                const request = event.Records[0].cf.request;
+                const response = event.Records[0].cf.response;
+
+                if (request.uri.endsWith('.br')) {
+                response.headers['content-encoding'] = [{ key: 'Content-Encoding', value: 'br' }];
+                }
+
+                return response;
+            };
+            `),
+        });
+
         this.distribution = new Distribution(this, 'UnityGameDistribution', {
             defaultBehavior: {
                 origin,
@@ -80,7 +103,12 @@ export class GameResources extends Construct {
                 allowedMethods: AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
                 cachePolicy: unityBrotliCachePolicy,
                 responseHeadersPolicy,
-
+                edgeLambdas: [
+                    {
+                        functionVersion: edgeFunction.currentVersion,
+                        eventType: LambdaEdgeEventType.ORIGIN_RESPONSE,
+                    },
+                ],
             },
             certificate,
             domainNames: ['ufo.dilltice.com'],
