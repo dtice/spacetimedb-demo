@@ -4,6 +4,7 @@ import { App } from 'aws-cdk-lib';
 import { EC2Stack } from '../lib/ec2-stack';
 import { CloudFrontStack } from '../lib/cloudfront-stack';
 import { UnityStack } from '../lib/unity-stack';
+import { AmazonLinuxCpuType, InstanceClass, InstanceSize } from 'aws-cdk-lib/aws-ec2';
 
 const app = new App();
 
@@ -15,8 +16,10 @@ const devEnv = {
 const ec2StackProps = {
   logLevel: process.env.LOG_LEVEL || 'INFO',
   sshPubKey: process.env.SSH_PUB_KEY || ' ',
-  cpuType: process.env.CPU_TYPE || 'ARM64',
-  instanceSize: process.env.INSTANCE_SIZE || 'MICRO',
+  cpuType: AmazonLinuxCpuType.X86_64,
+  instanceSize: InstanceSize.MICRO,
+  instanceClass: InstanceClass.T3,
+  keypairName: process.env.KEYPAIR_NAME || 'spacetime-keypair',
 };
 
 const cloudfrontStackProps = {

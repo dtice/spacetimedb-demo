@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/bash
 
 # Create spacetimedb user
 sudo mkdir /stdb
@@ -20,7 +20,7 @@ sudo cp /home/spacetimedb/spacetimedb.conf /etc/nginx/conf.d/
 sudo systemctl restart nginx
 
 # Install and configure certbot
-# sudo yum install certbot python3-certbot-nginx -y
-# sudo certbot --nginx -d spacetime.dilltice.com
-# sudo systemctl restart nginx
-# sudo systemctl status certbot.timer
+sudo yum install certbot python3-certbot-nginx -y
+sudo certbot --nginx -d spacetime.dilltice.com --non-interactive --agree-tos -m dillon.tice@gmail.com
+sudo systemctl restart nginx
+sudo systemctl status certbot.timer

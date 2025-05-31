@@ -15,6 +15,7 @@ import {
     AmazonLinuxCpuType,
     Peer,
     Port,
+    KeyPair,
 } from 'aws-cdk-lib/aws-ec2';
 import {
     Role,
@@ -30,15 +31,12 @@ import { Construct } from 'constructs';
 interface ServerProps {
     vpc: Vpc;
     sshSecurityGroup: SecurityGroup;
+    keypairName: string; // Keypair ID for SSH access
     logLevel: string;
-    sshPubKey: string;
-    cpuType: string;
-    instanceSize: string;
+    cpuType: AmazonLinuxCpuType;
+    instanceSize: InstanceSize;
+    instanceClass: InstanceClass;
 }
-
-let cpuType: AmazonLinuxCpuType;
-let instanceClass: InstanceClass;
-let instanceSize: InstanceSize;
 
 export class ServerResources extends Construct {
     public instance: Instance;
@@ -110,56 +108,17 @@ export class ServerResources extends Construct {
             { vpc: props.vpc, allowAllOutbound: true },
         );
 
-        // Allow HTTP and HTTPS inbound traffic on TCP port 80 and 443
-        ec2InstanceSecurityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(80), 'Allow HTTP');
-        ec2InstanceSecurityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(443), 'Allow HTTPS');
-
-        // Determine the correct CPUType and Instance Class based on the props passed in
-        if (props.cpuType == 'ARM64') {
-            cpuType = AmazonLinuxCpuType.ARM_64;
-        } else {
-            cpuType = AmazonLinuxCpuType.X86_64;
-        }
-
-        instanceClass = InstanceClass.T2;
-
-        // Determine the correct InstanceSize based on the props passed in
-        switch (props.instanceSize) {
-            case 'micro':
-                instanceSize = InstanceSize.MICRO;
-                break;
-            case 'small':
-                instanceSize = InstanceSize.SMALL;
-                break;
-            case 'medium':
-                instanceSize = InstanceSize.MEDIUM;
-                break;
-            case 'large':
-                instanceSize = InstanceSize.LARGE;
-                break;
-            case 'xlarge':
-                instanceSize = InstanceSize.XLARGE;
-                break;
-            case 'xlarge2':
-                instanceSize = InstanceSize.XLARGE2;
-                break;
-            case 'xlarge4':
-                instanceSize = InstanceSize.XLARGE4;
-                break;
-            default:
-                instanceSize = InstanceSize.LARGE;
-        }
-
         // Create the EC2 instance
         this.instance = new Instance(this, 'Instance', {
             vpc: props.vpc,
-            instanceType: InstanceType.of(instanceClass, instanceSize),
+            instanceType: InstanceType.of(props.instanceClass, props.instanceSize),
             machineImage: MachineImage.latestAmazonLinux2023({
                 cachedInContext: false,
-                cpuType: cpuType,
+                cpuType: props.cpuType,
             }),
             userData: userData,
             securityGroup: ec2InstanceSecurityGroup,
+            keyPair: KeyPair.fromKeyPairName(this, 'EC2StackKeyPair', props.keypairName),
             init: CloudFormationInit.fromConfigSets({
                 configSets: {
                     default: ['config'],
@@ -179,17 +138,11 @@ export class ServerResources extends Construct {
                             '/etc/config.sh',
                             'lib/resources/server/config/config.sh',
                         ),
-                        InitFile.fromString(
-                            // Use CloudformationInit to write a string to the EC2 instance
-                            '/home/ec2-user/.ssh/authorized_keys',
-                            props.sshPubKey + '\n',
-                        ),
                         InitCommand.shellCommand('chmod +x /etc/config.sh'), // Use CloudformationInit to run a shell command on the EC2 instance
                         InitCommand.shellCommand('/etc/config.sh'),
                     ]),
                 },
             }),
-
             initOptions: {
                 timeout: Duration.minutes(10),
                 includeUrl: true,

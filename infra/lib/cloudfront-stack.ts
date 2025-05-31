@@ -3,7 +3,7 @@ import { Construct } from 'constructs';
 import { Peer, Port, PrefixList } from 'aws-cdk-lib/aws-ec2';
 import { EC2Stack } from './ec2-stack';
 import { HttpOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
-import { AllowedMethods, CacheHeaderBehavior, CachePolicy, Distribution, OriginProtocolPolicy, OriginRequestPolicy, OriginSslPolicy, ViewerProtocolPolicy } from 'aws-cdk-lib/aws-cloudfront';
+import { AllowedMethods, CacheHeaderBehavior, CachePolicy, Distribution, OriginProtocolPolicy, OriginRequestCookieBehavior, OriginRequestHeaderBehavior, OriginRequestPolicy, OriginRequestQueryStringBehavior, OriginSslPolicy, ViewerProtocolPolicy } from 'aws-cdk-lib/aws-cloudfront';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { BlockPublicAccess, Bucket, ObjectOwnership } from 'aws-cdk-lib/aws-s3';
 import { Effect, PolicyStatement, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
@@ -26,6 +26,12 @@ export class CloudFrontStack extends Stack {
             'Allow HTTP access from CloudFront'
         );
 
+        ec2Stack.securityGroup.addIngressRule(
+            Peer.prefixList(cfOriginFacing.prefixListId),
+            Port.tcp(443),
+            'Allow HTTPS access from CloudFront'
+        );
+
         // Create an S3 bucket for CloudFront logs
         const logBucket = new Bucket(this, 'CloudFrontLogBucket', {
             blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
@@ -41,13 +47,24 @@ export class CloudFrontStack extends Stack {
             actions: ['s3:PutObject'],
             resources: [logBucket.arnForObjects('cloudfront-logs/*')]
         }));
-        
+
         logBucket.addToResourcePolicy(new PolicyStatement({
             effect: Effect.ALLOW,
             principals: [new ServicePrincipal('delivery.logs.amazonaws.com')],
             actions: ['s3:PutObject'],
             resources: [logBucket.arnForObjects('cloudfront-logs/*')]
         }));
+
+        const websocketOriginRequestPolicy = new OriginRequestPolicy(this, 'WebSocketOriginRequestPolicy', {
+            headerBehavior: OriginRequestHeaderBehavior.allowList(
+                'Sec-WebSocket-Key',
+                'Sec-WebSocket-Version',
+                'Sec-WebSocket-Protocol'
+            ),
+            queryStringBehavior: OriginRequestQueryStringBehavior.all(),
+            cookieBehavior: OriginRequestCookieBehavior.all(),
+            comment: 'Policy for forwarding WebSocket headers',
+        });
 
         // Get your existing certificate from ACM
         const certificate = Certificate.fromCertificateArn(this, 'Certificate', props.certificateArn);
@@ -57,13 +74,13 @@ export class CloudFrontStack extends Stack {
                 origin: new HttpOrigin(
                     ec2Stack.instance.instancePublicDnsName,
                     {
-                        protocolPolicy: OriginProtocolPolicy.HTTP_ONLY,
+                        protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
                     }
                 ),
                 viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 allowedMethods: AllowedMethods.ALLOW_ALL,
                 cachePolicy: CachePolicy.CACHING_DISABLED,
-                originRequestPolicy: OriginRequestPolicy.ALL_VIEWER,
+                originRequestPolicy: websocketOriginRequestPolicy,
             },
             certificate,
             domainNames: ['spacetime.dilltice.com'],

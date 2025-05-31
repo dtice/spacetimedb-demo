@@ -2,10 +2,15 @@ import { Stack, StackProps, CfnOutput } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { VPCResources } from './constructs/vpc';
 import { ServerResources } from './constructs/server';
-import { EC2ExampleProps, envValidator } from './utils/env-validator';
-import { Instance, SecurityGroup, Vpc } from 'aws-cdk-lib/aws-ec2';
+import { AmazonLinuxCpuType, Instance, InstanceClass, InstanceSize, SecurityGroup, Vpc } from 'aws-cdk-lib/aws-ec2';
 
-export interface EC2StackProps extends StackProps, EC2ExampleProps {}
+export interface EC2StackProps extends StackProps {
+    logLevel: string;
+    keypairName: string;    
+    cpuType: AmazonLinuxCpuType;
+    instanceSize: InstanceSize;
+    instanceClass: InstanceClass;
+}
 
 export class EC2Stack extends Stack {
   public readonly instance: Instance;
@@ -15,10 +20,7 @@ export class EC2Stack extends Stack {
   constructor(scope: Construct, id: string, props: EC2StackProps) {
     super(scope, id, props);
 
-    const { logLevel, sshPubKey, cpuType, instanceSize } = props;
-
-    // Validate environment variables
-    envValidator(props);
+    const { logLevel, cpuType, instanceSize, instanceClass, keypairName } = props;
 
     // Create VPC and Security Group
     const vpcResources = new VPCResources(this, 'VPC');
@@ -26,11 +28,12 @@ export class EC2Stack extends Stack {
     // Create EC2 Instance
     const serverResources = new ServerResources(this, 'EC2', {
       vpc: vpcResources.vpc,
+      keypairName,
       sshSecurityGroup: vpcResources.sshSecurityGroup,
       logLevel: logLevel,
-      sshPubKey: sshPubKey,
       cpuType: cpuType,
-      instanceSize: instanceSize.toLowerCase(),
+      instanceSize,
+      instanceClass 
     });
 
     this.vpc = vpcResources.vpc;

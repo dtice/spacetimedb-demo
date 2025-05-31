@@ -22,6 +22,10 @@
 2. Run `scrips/generate.bat` to generate the types for Unity
 3. Run the `SampleScene` Scene
 
+## How to deploy
+1. Deploy EC2Stack/CloudfrontStack
+2. Change Route53 record for spacetime.dilltice.com to server public dns
+
 ## TODO:
  - Make the inputs for the UFOs better
  - Scale the UFOs and Cows better
