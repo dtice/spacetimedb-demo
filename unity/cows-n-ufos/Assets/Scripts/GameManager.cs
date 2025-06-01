@@ -10,7 +10,7 @@ public class GameManager : MonoBehaviour
     const string MODULE_NAME = "cows-n-ufos";
 
     [SerializeField] private GameObject menu;
-    
+
     public static Boolean LockPlayerInput = false;
 
     public static event Action OnConnected;
@@ -19,7 +19,7 @@ public class GameManager : MonoBehaviour
     public float borderThickness = 2;
     public Material borderMaterial;
 
-	public static GameManager Instance { get; private set; }
+    public static GameManager Instance { get; private set; }
     public static Identity LocalIdentity { get; private set; }
     public static DbConnection Conn { get; private set; }
     public static DbConnection DB { get; private set; }

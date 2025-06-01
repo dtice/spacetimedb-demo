@@ -5,17 +5,18 @@ import { ServerResources } from './constructs/server';
 import { AmazonLinuxCpuType, Instance, InstanceClass, InstanceSize, SecurityGroup, Vpc } from 'aws-cdk-lib/aws-ec2';
 
 export interface EC2StackProps extends StackProps {
-    logLevel: string;
-    keypairName: string;    
-    cpuType: AmazonLinuxCpuType;
-    instanceSize: InstanceSize;
-    instanceClass: InstanceClass;
+  logLevel: string;
+  keypairName: string;
+  cpuType: AmazonLinuxCpuType;
+  instanceSize: InstanceSize;
+  instanceClass: InstanceClass;
 }
 
 export class EC2Stack extends Stack {
   public readonly instance: Instance;
   public readonly vpc: Vpc;
   public readonly securityGroup: SecurityGroup;
+  public readonly instanceSecurityGroup: SecurityGroup;
 
   constructor(scope: Construct, id: string, props: EC2StackProps) {
     super(scope, id, props);
@@ -33,11 +34,12 @@ export class EC2Stack extends Stack {
       logLevel: logLevel,
       cpuType: cpuType,
       instanceSize,
-      instanceClass 
+      instanceClass
     });
 
     this.vpc = vpcResources.vpc;
     this.securityGroup = vpcResources.sshSecurityGroup;
+    this.instanceSecurityGroup = serverResources.instanceSecurityGroup;
     this.instance = serverResources.instance;
 
     // SSM Command to start a session

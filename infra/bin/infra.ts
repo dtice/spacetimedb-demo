@@ -2,7 +2,6 @@
 import 'dotenv/config';
 import { App } from 'aws-cdk-lib';
 import { EC2Stack } from '../lib/ec2-stack';
-import { CloudFrontStack } from '../lib/cloudfront-stack';
 import { UnityStack } from '../lib/unity-stack';
 import { AmazonLinuxCpuType, InstanceClass, InstanceSize } from 'aws-cdk-lib/aws-ec2';
 
@@ -19,13 +18,8 @@ const ec2StackProps = {
   cpuType: AmazonLinuxCpuType.X86_64,
   instanceSize: InstanceSize.MICRO,
   instanceClass: InstanceClass.T3,
-  keypairName: process.env.KEYPAIR_NAME || 'spacetime-keypair',
+  keypairName: process.env.KEYPAIR_NAME || 'spacetimedb-keypair',
 };
-
-const cloudfrontStackProps = {
-  // Certificate for spacetime.dilltice.com
-  certificateArn: 'arn:aws:acm:us-east-1:730335480069:certificate/e76b4f1c-2521-46fd-9bb6-e90741839def',
-}
 
 const unityStackProps = {
   bucketName: 'cows-n-ufos-game-assets',
@@ -36,16 +30,10 @@ const unityStackProps = {
   }
 }
 
-const ec2Stack = new EC2Stack(app, 'EC2Stack', {
+new EC2Stack(app, 'EC2Stack', {
   ...ec2StackProps,
   env: devEnv,
   description: 'SpacetimeDB EC2 Stack',
-});
-
-new CloudFrontStack(app, 'CloudFrontStack', ec2Stack, {
-  ...cloudfrontStackProps,
-  env: devEnv,
-  description: 'SpacetimeDB CloudFront Stack',
 });
 
 // Create resources to host game assets

@@ -40,6 +40,7 @@ interface ServerProps {
 
 export class ServerResources extends Construct {
     public instance: Instance;
+    public instanceSecurityGroup: SecurityGroup;
 
     constructor(scope: Construct, id: string, props: ServerProps) {
         super(scope, id);
@@ -95,18 +96,30 @@ export class ServerResources extends Construct {
             'sudo systemctl start docker',
             'mkdir -p /home/spacetimedb',
             `aws s3 cp s3://${assetBucket.bucketName} /home/spacetimedb --recursive`,
+            // Check and fix file permissions
+            'ls -la /home/spacetimedb',
             // Execute setup script to install and configure the application
             'cd /home/spacetimedb',
-            'chmod +x /home/spacetimedb/setup.sh',
-            'sudo /home/spacetimedb/setup.sh',
+            'sudo chmod 755 /home/spacetimedb/setup.sh',
+            'sudo bash /home/spacetimedb/setup.sh > /home/spacetimedb/setup.log 2>&1',
+            'echo "Setup script completed with exit code: $?"',
+            'cat /home/spacetimedb/setup.log'
         );
 
-        // Create a Security Group for the EC2 instance.  This group will allow SSH access to the EC2 instance
-        const ec2InstanceSecurityGroup = new SecurityGroup(
+        // Create a Security Group for the EC2 instance
+        this.instanceSecurityGroup = new SecurityGroup(
             this,
             'ec2InstanceSecurityGroup',
-            { vpc: props.vpc, allowAllOutbound: true },
+            {
+                vpc: props.vpc,
+                description: 'Security Group for EC2 instance',
+                allowAllOutbound: true
+            },
         );
+
+        // Allow HTTP and HTTPS access from anywhere
+        this.instanceSecurityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(80), 'Allow HTTP');
+        this.instanceSecurityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(443), 'Allow HTTPS');
 
         // Create the EC2 instance
         this.instance = new Instance(this, 'Instance', {
@@ -117,7 +130,7 @@ export class ServerResources extends Construct {
                 cpuType: props.cpuType,
             }),
             userData: userData,
-            securityGroup: ec2InstanceSecurityGroup,
+            securityGroup: this.instanceSecurityGroup,
             keyPair: KeyPair.fromKeyPairName(this, 'EC2StackKeyPair', props.keypairName),
             init: CloudFormationInit.fromConfigSets({
                 configSets: {
@@ -134,12 +147,14 @@ export class ServerResources extends Construct {
                             '/tmp/amazon-cloudwatch-agent.json',
                             './lib/resources/server/config/amazon-cloudwatch-agent.json',
                         ),
-                        InitFile.fromFileInline(
+                        // Create the config script directly rather than using a file
+                        InitFile.fromString(
                             '/etc/config.sh',
-                            'lib/resources/server/config/config.sh',
+                            '#!/bin/bash\n' +
+                            '/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/tmp/amazon-cloudwatch-agent.json\n'
                         ),
-                        InitCommand.shellCommand('chmod +x /etc/config.sh'), // Use CloudformationInit to run a shell command on the EC2 instance
-                        InitCommand.shellCommand('/etc/config.sh'),
+                        InitCommand.shellCommand('chmod +x /etc/config.sh'), // Make it executable
+                        InitCommand.shellCommand('/bin/bash /etc/config.sh'), // Run it explicitly with bash
                     ]),
                 },
             }),
