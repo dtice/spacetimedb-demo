@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# SpacetimeDB Backup Script
+# This script backs up the SpacetimeDB data directory and configurations
+
+BACKUP_DIR="/opt/spacetimedb-backups"
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+BACKUP_NAME="spacetimedb_backup_${TIMESTAMP}"
+S3_BUCKET="your-backup-bucket" # Replace with your S3 bucket name
+
+# Create backup directory
+mkdir -p $BACKUP_DIR
+
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a /var/log/spacetimedb-backup.log
+}
+
+log "Starting SpacetimeDB backup: $BACKUP_NAME"
+
+# Stop SpacetimeDB service temporarily for consistent backup
+log "Stopping SpacetimeDB service for backup"
+sudo systemctl stop spacetimedb
+
+# Create backup archive
+log "Creating backup archive"
+tar -czf "$BACKUP_DIR/${BACKUP_NAME}.tar.gz" \
+    -C / \
+    stdb \
+    etc/systemd/system/spacetimedb.service \
+    etc/nginx/conf.d/spacetimedb.conf \
+    usr/local/bin/health-check.sh \
+    2>/dev/null || log "Some files may have been skipped during backup"
+
+# Restart SpacetimeDB service
+log "Restarting SpacetimeDB service"
+sudo systemctl start spacetimedb
+
+# Verify service is running
+if systemctl is-active --quiet spacetimedb; then
+    log "SpacetimeDB service restarted successfully"
+else
+    log "ERROR: SpacetimeDB service failed to restart after backup"
+    exit 1
+fi
+
+# Upload to S3 (optional - requires AWS CLI configured)
+if command -v aws &> /dev/null && [ ! -z "$S3_BUCKET" ]; then
+    log "Uploading backup to S3"
+    aws s3 cp "$BACKUP_DIR/${BACKUP_NAME}.tar.gz" "s3://$S3_BUCKET/spacetimedb-backups/" || log "Failed to upload to S3"
+fi
+
+# Clean up old local backups (keep last 7)
+log "Cleaning up old backups"
+cd $BACKUP_DIR
+ls -t spacetimedb_backup_*.tar.gz | tail -n +8 | xargs -r rm -f
+
+log "Backup completed: $BACKUP_NAME"
+log "Backup size: $(du -h "$BACKUP_DIR/${BACKUP_NAME}.tar.gz" | cut -f1)"

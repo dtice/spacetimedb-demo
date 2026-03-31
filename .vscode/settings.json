@@ -1,0 +1,4 @@
+{
+    "dotnet.defaultSolution": "unity/cows-n-ufos/cows-n-ufos.sln",
+    "dotnet.preferCSharpExtension": true
+}

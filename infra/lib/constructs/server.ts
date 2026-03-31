@@ -16,6 +16,7 @@ import {
     Peer,
     Port,
     KeyPair,
+    EbsDeviceVolumeType,
 } from 'aws-cdk-lib/aws-ec2';
 import {
     Role,
@@ -27,6 +28,10 @@ import {
 import { Bucket, ObjectOwnership } from 'aws-cdk-lib/aws-s3';
 import { Source, BucketDeployment } from 'aws-cdk-lib/aws-s3-deployment';
 import { Construct } from 'constructs';
+import { Topic } from 'aws-cdk-lib/aws-sns';
+import { EmailSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
+import { Alarm, Metric, ComparisonOperator, TreatMissingData, Unit } from 'aws-cdk-lib/aws-cloudwatch';
+import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
 
 interface ServerProps {
     vpc: Vpc;
@@ -41,9 +46,18 @@ interface ServerProps {
 export class ServerResources extends Construct {
     public instance: Instance;
     public instanceSecurityGroup: SecurityGroup;
+    public alertTopic: Topic;
 
     constructor(scope: Construct, id: string, props: ServerProps) {
         super(scope, id);
+
+        // Create SNS topic for alerts
+        this.alertTopic = new Topic(this, 'SpacetimeDBAlerts', {
+            displayName: 'SpacetimeDB Server Alerts',
+        });
+
+        // Add email subscription (replace with your email)
+        this.alertTopic.addSubscription(new EmailSubscription('dillon.tice@gmail.com'));
 
         // Create an Asset Bucket for the Instance.  Assets in this bucket will be downloaded to the EC2 during deployment
         const assetBucket = new Bucket(this, 'assetBucket', {
@@ -132,6 +146,19 @@ export class ServerResources extends Construct {
             userData: userData,
             securityGroup: this.instanceSecurityGroup,
             keyPair: KeyPair.fromKeyPairName(this, 'EC2StackKeyPair', props.keypairName),
+            blockDevices: [
+                {
+                    deviceName: '/dev/xvda',
+                    volume: {
+                        ebsDevice: {
+                            volumeSize: 20, // GB
+                            volumeType: EbsDeviceVolumeType.GP3,
+                            encrypted: true,
+                            deleteOnTermination: true,
+                        }
+                    }
+                }
+            ],
             init: CloudFormationInit.fromConfigSets({
                 configSets: {
                     default: ['config'],
@@ -169,5 +196,105 @@ export class ServerResources extends Construct {
 
         // Add the SSH Security Group to the EC2 instance
         this.instance.addSecurityGroup(props.sshSecurityGroup);
+
+        // Create CloudWatch Alarms for monitoring
+        this.createCloudWatchAlarms();
+    }
+
+    private createCloudWatchAlarms() {
+        const snsAction = new SnsAction(this.alertTopic);
+
+        // CPU Utilization Alarm
+        new Alarm(this, 'HighCpuUtilization', {
+            metric: new Metric({
+                namespace: 'AWS/EC2',
+                metricName: 'CPUUtilization',
+                dimensionsMap: {
+                    InstanceId: this.instance.instanceId,
+                },
+                statistic: 'Average',
+                period: Duration.minutes(5),
+            }),
+            threshold: 80,
+            comparisonOperator: ComparisonOperator.GREATER_THAN_THRESHOLD,
+            evaluationPeriods: 2,
+            treatMissingData: TreatMissingData.NOT_BREACHING,
+            alarmDescription: 'Alert when CPU exceeds 80%',
+        }).addAlarmAction(snsAction);
+
+        // Memory Utilization Alarm (Custom metric from CloudWatch Agent)
+        new Alarm(this, 'HighMemoryUtilization', {
+            metric: new Metric({
+                namespace: 'SpacetimeDB/EC2',
+                metricName: 'mem_used_percent',
+                dimensionsMap: {
+                    InstanceId: this.instance.instanceId,
+                },
+                statistic: 'Average',
+                period: Duration.minutes(5),
+            }),
+            threshold: 85,
+            comparisonOperator: ComparisonOperator.GREATER_THAN_THRESHOLD,
+            evaluationPeriods: 2,
+            treatMissingData: TreatMissingData.NOT_BREACHING,
+            alarmDescription: 'Alert when memory usage exceeds 85%',
+        }).addAlarmAction(snsAction);
+
+        // Disk Usage Alarm
+        new Alarm(this, 'HighDiskUtilization', {
+            metric: new Metric({
+                namespace: 'SpacetimeDB/EC2',
+                metricName: 'used_percent',
+                dimensionsMap: {
+                    InstanceId: this.instance.instanceId,
+                    device: '/dev/xvda1',
+                    fstype: 'xfs',
+                    path: '/',
+                },
+                statistic: 'Average',
+                period: Duration.minutes(5),
+            }),
+            threshold: 90,
+            comparisonOperator: ComparisonOperator.GREATER_THAN_THRESHOLD,
+            evaluationPeriods: 1,
+            treatMissingData: TreatMissingData.NOT_BREACHING,
+            alarmDescription: 'Alert when disk usage exceeds 90%',
+        }).addAlarmAction(snsAction);
+
+        // Instance Status Check Alarm
+        new Alarm(this, 'InstanceStatusCheckFailed', {
+            metric: new Metric({
+                namespace: 'AWS/EC2',
+                metricName: 'StatusCheckFailed_Instance',
+                dimensionsMap: {
+                    InstanceId: this.instance.instanceId,
+                },
+                statistic: 'Maximum',
+                period: Duration.minutes(1),
+            }),
+            threshold: 0,
+            comparisonOperator: ComparisonOperator.GREATER_THAN_THRESHOLD,
+            evaluationPeriods: 2,
+            treatMissingData: TreatMissingData.NOT_BREACHING,
+            alarmDescription: 'Alert when instance status check fails',
+        }).addAlarmAction(snsAction);
+
+        // System Status Check Alarm  
+        new Alarm(this, 'SystemStatusCheckFailed', {
+            metric: new Metric({
+                namespace: 'AWS/EC2',
+                metricName: 'StatusCheckFailed_System',
+                dimensionsMap: {
+                    InstanceId: this.instance.instanceId,
+                },
+                statistic: 'Maximum',
+                period: Duration.minutes(1),
+            }),
+            threshold: 0,
+            comparisonOperator: ComparisonOperator.GREATER_THAN_THRESHOLD,
+            evaluationPeriods: 2,
+            treatMissingData: TreatMissingData.NOT_BREACHING,
+            alarmDescription: 'Alert when system status check fails',
+        }).addAlarmAction(snsAction);
     }
 }

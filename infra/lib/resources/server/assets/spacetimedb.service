@@ -1,12 +1,31 @@
 [Unit]
 Description=SpacetimeDB Server
 After=network.target
+Wants=network-online.target
+After=network-online.target
 
 [Service]
+Type=simple
 ExecStart=/stdb/spacetime --root-dir=/stdb start --listen-addr='127.0.0.1:3000'
 Restart=always
+RestartSec=10
+StartLimitInterval=300
+StartLimitBurst=5
 User=spacetimedb
+Group=spacetimedb
 WorkingDirectory=/stdb
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/stdb
+
+# Resource limits
+LimitNOFILE=65536
+MemoryHigh=1G
+MemoryMax=1.5G
 
 [Install]
 WantedBy=multi-user.target

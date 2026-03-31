@@ -2,7 +2,16 @@ import { Stack, StackProps, CfnOutput } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { VPCResources } from './constructs/vpc';
 import { ServerResources } from './constructs/server';
-import { AmazonLinuxCpuType, Instance, InstanceClass, InstanceSize, SecurityGroup, Vpc } from 'aws-cdk-lib/aws-ec2';
+import {
+  AmazonLinuxCpuType,
+  Instance,
+  InstanceClass,
+  InstanceSize,
+  SecurityGroup,
+  Vpc,
+  CfnEIP,
+  CfnEIPAssociation
+} from 'aws-cdk-lib/aws-ec2';
 
 export interface EC2StackProps extends StackProps {
   logLevel: string;
@@ -17,6 +26,7 @@ export class EC2Stack extends Stack {
   public readonly vpc: Vpc;
   public readonly securityGroup: SecurityGroup;
   public readonly instanceSecurityGroup: SecurityGroup;
+  public readonly elasticIp: CfnEIP;
 
   constructor(scope: Construct, id: string, props: EC2StackProps) {
     super(scope, id, props);
@@ -42,6 +52,17 @@ export class EC2Stack extends Stack {
     this.instanceSecurityGroup = serverResources.instanceSecurityGroup;
     this.instance = serverResources.instance;
 
+    // Create an Elastic IP and associate it with the EC2 instance
+    this.elasticIp = new CfnEIP(this, 'ElasticIP', {
+      domain: 'vpc',
+    });
+
+    // Associate the Elastic IP with the EC2 instance
+    new CfnEIPAssociation(this, 'ElasticIPAssociation', {
+      eip: this.elasticIp.ref,
+      instanceId: this.instance.instanceId,
+    });
+
     // SSM Command to start a session
     new CfnOutput(this, 'ssmCommand', {
       value: `aws ssm start-session --target ${serverResources.instance.instanceId}`,
@@ -50,6 +71,13 @@ export class EC2Stack extends Stack {
     // SSH Command to connect to the EC2 Instance
     new CfnOutput(this, 'sshCommand', {
       value: `ssh ec2-user@${serverResources.instance.instancePublicDnsName}`,
+    });
+
+    // Output the Elastic IP address
+    new CfnOutput(this, 'InstanceElasticIP', {
+      value: this.elasticIp.ref,
+      description: 'Elastic IP address for the EC2 instance',
+      exportName: 'EC2ElasticIP'
     });
 
     new CfnOutput(this, 'InstanceDnsName', {
